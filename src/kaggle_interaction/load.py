@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 import kagglehub
 
-def load_competition_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def load_data() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """ Returns submission_sample, training_set, test_set dataframes from the competition dataset. """
     path = Path(kagglehub.competition_download('dmt-2026-2nd-assignment'))
     return (
