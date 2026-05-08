@@ -1,8 +1,16 @@
+import sys
 from dotenv import load_dotenv
 load_dotenv()
 
 from kaggle_interaction import export_submission, load_test_set
-import predict
+import predict as p
+import data as d
 
-predictions = predict.random(load_test_set())
-export_submission(predictions, push_to_kaggle=True)
+data = load_test_set()
+
+data = d.scale_bounded(data)
+data = d.compute_comp_rates(data)
+
+predictions = p.random(data)
+
+export_submission(predictions, push_to_kaggle=False)
