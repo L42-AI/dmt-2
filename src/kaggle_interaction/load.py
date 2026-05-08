@@ -13,13 +13,17 @@ def load_training_set(path: str | None = None) -> pd.DataFrame:
     """ Returns the training set dataframe from the competition dataset. """
     if path is None:
         path = Path(kagglehub.competition_download('dmt-2026-2nd-assignment'))
-    return pd.read_csv(path / 'training_set_VU_DM.csv')
+    df = pd.read_csv(path / 'training_set_VU_DM.csv')
+    df['date_time'] = pd.to_datetime(df['date_time'])
+    return df
 
 def load_test_set(path: str | None = None) -> pd.DataFrame:
     """ Returns the test set dataframe from the competition dataset. """
     if path is None:
         path = Path(kagglehub.competition_download('dmt-2026-2nd-assignment'))
-    return pd.read_csv(path / 'test_set_VU_DM.csv')
+    df = pd.read_csv(path / 'test_set_VU_DM.csv')
+    df['date_time'] = pd.to_datetime(df['date_time'])
+    return df
 
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     """ Returns training_set, test_set dataframes from the competition dataset. """

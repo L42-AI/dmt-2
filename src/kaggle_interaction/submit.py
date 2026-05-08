@@ -1,5 +1,3 @@
-import kaggle
-
 import pandas as pd
 
 from pathlib import Path
@@ -18,6 +16,7 @@ def export_submission(submission_df: pd.DataFrame, push_to_kaggle=False):
 
     # 3. Handle optional Kaggle push
     if push_to_kaggle:
+        import kaggle
         print(f"Submitting '{file.name}' to Kaggle competition: {comp_id}...")
         try:
             kaggle.api.competition_submit(str(file), message, comp_id)
