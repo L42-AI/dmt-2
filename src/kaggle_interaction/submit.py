@@ -2,19 +2,23 @@ import pandas as pd
 
 from pathlib import Path
 
-def export_submission(submission_df: pd.DataFrame, push_to_kaggle=False):
+def export_submission(submission_data: pd.DataFrame | dict[int, list[int]], push_to_kaggle=False):
     """
     Exports predictions to a CSV and optionally submits directly to Kaggle.
     """
 
     file = Path(__file__).parent / 'submission.csv'
-    comp_id='dmt-2026-2nd-assignment',
+    comp_id='dmt-2026-2nd-assignment'
     message='Pipeline submission from DMT-2 assignment'
+
+    if isinstance(submission_data, pd.DataFrame):
+        submission_df = submission_data
+    else:
+        submission_df = pd.DataFrame([(srch_id, prop_id) for srch_id, prop_ids in submission_data.items() for prop_id in prop_ids], columns=['srch_id', 'prop_id'])
 
     submission_df.to_csv(file, index=False)
     print(f"Successfully exported {len(submission_df)} rows to '{file}'.")
 
-    # 3. Handle optional Kaggle push
     if push_to_kaggle:
         import kaggle
         print(f"Submitting '{file.name}' to Kaggle competition: {comp_id}...")
