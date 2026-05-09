@@ -31,7 +31,8 @@ def ndcg_5(relevance_scores: list, alt: bool = False) -> float:
         float: NDCG value for search query results.
     """
     dcg_5 = dcg(relevance_scores, 5, alt)
-    idcg_5 = dcg(relevance_scores.sort(reverse=True), 5, alt)
+    ideal_relevance_scores = sorted(relevance_scores, reverse=True)
+    idcg_5 = dcg(ideal_relevance_scores, 5, alt)
     return dcg_5 / idcg_5
 
 def evaluate(model, data):
