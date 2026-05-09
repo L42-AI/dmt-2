@@ -11,6 +11,6 @@ data = load_test_set()
 data = d.scale_bounded(data)
 data = d.compute_comp_rates(data)
 
-predictions = p.random(data)
+data = p.random(data)
 
-export_submission(predictions, push_to_kaggle=False)
+export_submission(data, push_to_kaggle=False)

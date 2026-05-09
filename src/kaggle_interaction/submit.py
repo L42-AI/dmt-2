@@ -2,7 +2,7 @@ import pandas as pd
 
 from pathlib import Path
 
-def export_submission(submission_data: pd.DataFrame | dict[int, list[int]], push_to_kaggle=False):
+def export_submission(data: pd.DataFrame, push_to_kaggle=False):
     """
     Exports predictions to a CSV and optionally submits directly to Kaggle.
     """
@@ -11,12 +11,12 @@ def export_submission(submission_data: pd.DataFrame | dict[int, list[int]], push
     comp_id='dmt-2026-2nd-assignment'
     message='Pipeline submission from DMT-2 assignment'
 
-    if isinstance(submission_data, pd.DataFrame):
-        submission_df = submission_data
-    else:
-        submission_df = pd.DataFrame([(srch_id, prop_id) for srch_id, prop_ids in submission_data.items() for prop_id in prop_ids], columns=['srch_id', 'prop_id'])
+    submission_df = data[['srch_id', 'prop_id', 'position']].copy()
+
+    submission_df.sort_values(['srch_id', 'position']).drop(columns=['position'], inplace=True)
 
     submission_df.to_csv(file, index=False)
+
     print(f"Successfully exported {len(submission_df)} rows to '{file}'.")
 
     if push_to_kaggle:
