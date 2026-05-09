@@ -1,6 +1,6 @@
 import pandas as pd
 
-def build_relevance_scores(df: pd.DataFrame) -> None:
+def build_relevance_scores(df: pd.DataFrame) -> pd.DataFrame:
     ''' Build the relevance score attribute in the dataframe, according to the values specified in 
         the assignment document
 
@@ -13,6 +13,8 @@ def build_relevance_scores(df: pd.DataFrame) -> None:
     df.loc[which_clicked, 'rel_score'] = 1
     df.loc[which_booked, 'rel_score'] = 5
     df.loc[which_neither, 'rel_score'] = 0
+    
+    return df
 
 
 def process_features(data, config):
