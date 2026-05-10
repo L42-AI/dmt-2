@@ -15,7 +15,7 @@ def dcg(relevance_scores: list, top_ranks: int = 5, alt: bool = False) -> float:
     top_k = relevance_scores[:top_ranks]
     ranks = range(1, top_ranks + 1) # [1, k]
     if alt:
-        penalized_top_k = [2 ** top_k[i-1] / math.log2(i + 1) for i in ranks]
+        penalized_top_k = [(2 ** top_k[i-1] - 1) / math.log2(i + 1) for i in ranks]
     else:
         penalized_top_k = [top_k[i - 1] / math.log2(i + 1) for i in ranks]
     return sum(penalized_top_k)
