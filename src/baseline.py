@@ -1,8 +1,10 @@
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-from kaggle_interaction import load_training_set
-from evaluate.loss import create_relevance_target, compute_loss
+from data.load import load_training_set
+from data.features import create_relevance_target
+
+from evaluate import compute_loss
 from predict import random
 
 df_train = load_training_set()

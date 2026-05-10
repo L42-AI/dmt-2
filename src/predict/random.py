@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+__all__ = ["random"]
+
 def random(test_set: pd.DataFrame) -> pd.DataFrame:
     """
     Assigns a random ranking position to each property within a search query.

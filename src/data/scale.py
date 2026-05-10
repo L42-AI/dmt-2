@@ -1,5 +1,4 @@
 import pandas as pd
-import matplotlib.pyplot as plt
 
 def scale_bounded(df: pd.DataFrame) -> pd.DataFrame:
     """
