@@ -16,7 +16,7 @@ def _sample_queries(
     if query_sample_proportion is None:
         return df
 
-    if 0 <= query_sample_proportion <= 1:
+    if 0 > query_sample_proportion or query_sample_proportion > 1:
         raise ValueError(f"Expected query_sample_proportion to be between 0 and 1, got {query_sample_proportion}")
     
     if 'srch_id' not in df.columns:

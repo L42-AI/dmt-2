@@ -13,7 +13,7 @@ class Pipeline:
     TRAIN_RATIO = 0.8
 
     def __init__(self):
-        self.train_set, self.test_set = load_data()
+        self.train_set, self.test_set = load_data(0.2)
         self.train_set = create_relevance_target(self.train_set)
 
     def run(self, approach: Literal['baseline']) -> tuple:
@@ -32,19 +32,16 @@ class Pipeline:
 
         train_predictions = random(train_set)
         train_loss = compute_loss(train_predictions)
-        print(f"Training Loss: {train_loss}")
 
         val_predictions = random(val_set)
         val_loss = compute_loss(val_predictions)
-        print(f"Validation Loss: {val_loss}")
 
         test_predictions = random(test_set)
-        # Here you would typically save or return the test predictions for submission
-        print("Test predictions generated.")
+        test_loss = None
         
         return (
             train_predictions, val_predictions, test_predictions,
-            train_loss, val_loss, None
+            train_loss, val_loss, test_loss
             )
 
     def _run_advanced(self, train_set, val_set, test_set):
