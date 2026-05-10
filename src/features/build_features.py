@@ -5,7 +5,7 @@ def build_binary_season(name: str, df: pd.DataFrame, start: int, end: int) -> pd
     return df
 
 def build_checkin_dates(df: pd.DataFrame) -> pd.DataFrame:
-    df['checkin_date'] = df['date_time'] + pd.to_timedelta(df['srch_booking_window'], unit='D')
+    df['checkin_date'] = df['date_time'] + pd.to_timedelta(df['srch_booking_window'].squeeze(), unit='D') # type: ignore[arg-type]
     return df
 
 def build_relevance_scores(df: pd.DataFrame) -> pd.DataFrame:
@@ -15,12 +15,13 @@ def build_relevance_scores(df: pd.DataFrame) -> pd.DataFrame:
     Args:
         df (pd.DataFrame): The dataframe to which to add the relevance score attribute
     '''
-    which_clicked = df.query('click_bool == 1').index
-    which_booked = df.query('booking_bool == 1').index
-    which_neither = df.query('click_bool == 0 & booking_bool == 0')
-    df.loc[which_clicked, 'rel_score'] = 1
-    df.loc[which_booked, 'rel_score'] = 5
-    df.loc[which_neither, 'rel_score'] = 0
+    clicked = df['click_bool'] == 1
+    booked = df['booking_bool'] == 1
+    neither = ~(clicked | booked)
+
+    df.loc[clicked, 'rel_score'] = 1
+    df.loc[booked, 'rel_score'] = 5
+    df.loc[neither, 'rel_score'] = 0
     
     return df
 
