@@ -3,32 +3,75 @@ from pathlib import Path
 import pandas as pd
 import kagglehub
 
-def load_submission_sample(path: str | None = None) -> pd.DataFrame:
-    """ Returns the submission sample dataframe from the competition dataset. """
+def _competition_data_path(path: Path | str | None) -> Path:
     if path is None:
-        path = Path(kagglehub.competition_download('dmt-2026-2nd-assignment'))
+        path = kagglehub.competition_download('dmt-2026-2nd-assignment')
+    return Path(path)
+
+def _sample_queries(
+    df: pd.DataFrame,
+    query_sample_proportion: float | None,
+) -> pd.DataFrame:
+    
+    if query_sample_proportion is None:
+        return df
+
+    if 0 <= query_sample_proportion <= 1:
+        raise ValueError(f"Expected query_sample_proportion to be between 0 and 1, got {query_sample_proportion}")
+    
+    if 'srch_id' not in df.columns:
+        raise KeyError("Expected 'srch_id' column to sample queries.")
+
+    unique_queries = df['srch_id'].drop_duplicates()
+    sampled_queries = unique_queries.sample(frac=query_sample_proportion)
+    return df[df['srch_id'].isin(sampled_queries)]
+
+
+def load_submission_sample(path: Path | str | None = None) -> pd.DataFrame:
+    """Return the submission sample dataframe from the competition dataset."""
+    if path is None:
+        path = _competition_data_path(path)
+    else:
+        path = Path(path)
     return pd.read_csv(path / 'submission_sample.csv')
 
-def load_training_set(path: str | None = None) -> pd.DataFrame:
-    """ Returns the training set dataframe from the competition dataset. """
-    if path is None:
-        path = Path(kagglehub.competition_download('dmt-2026-2nd-assignment'))
+def load_training_set(
+    path: Path | str | None = None,
+    query_sample_proportion: float | None = None,
+) -> pd.DataFrame:
+    """Return the training set dataframe from the competition dataset.
+
+    Set ``query_sample_proportion`` to keep only a random proportion of queries.
+    """
+    path = _competition_data_path(path)
+
     df = pd.read_csv(path / 'training_set_VU_DM.csv')
     df['date_time'] = pd.to_datetime(df['date_time'])
-    return df
+    return _sample_queries(df, query_sample_proportion)
 
-def load_test_set(path: str | None = None) -> pd.DataFrame:
-    """ Returns the test set dataframe from the competition dataset. """
-    if path is None:
-        path = Path(kagglehub.competition_download('dmt-2026-2nd-assignment'))
+def load_test_set(
+    path: Path | str | None = None,
+    query_sample_proportion: float | None = None,
+) -> pd.DataFrame:
+    """Return the test set dataframe from the competition dataset.
+
+    Set ``query_sample_proportion`` to keep only a random proportion of queries.
+    """
+    path = _competition_data_path(path)
+
     df = pd.read_csv(path / 'test_set_VU_DM.csv')
     df['date_time'] = pd.to_datetime(df['date_time'])
-    return df
+    return _sample_queries(df, query_sample_proportion)
 
-def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
-    """ Returns training_set, test_set dataframes from the competition dataset. """
-    path = Path(kagglehub.competition_download('dmt-2026-2nd-assignment'))
+def load_data(
+    query_sample_proportion: float | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return training_set and test_set dataframes from the competition dataset.
+
+    Set ``query_sample_proportion`` to keep only a random proportion of queries in both sets.
+    """
+    path = _competition_data_path(None)
     return (
-        load_training_set(path),
-        load_test_set(path)
+        load_training_set(path, query_sample_proportion),
+        load_test_set(path, query_sample_proportion)
     )

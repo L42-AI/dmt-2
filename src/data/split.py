@@ -9,6 +9,6 @@ def train_val_split(data: pd.DataFrame, train_ratio: float = 0.8) -> tuple[pd.Da
     cutoff_date = sessions.iloc[cutoff_index]['date_time']
 
     train_data = data[data['date_time'] <= cutoff_date]
-    test_data = data[data['date_time'] > cutoff_date]
+    val_data = data[data['date_time'] > cutoff_date]
 
-    return train_data, test_data
+    return train_data, val_data

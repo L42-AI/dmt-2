@@ -26,4 +26,5 @@ def create_relevance_target(df: pd.DataFrame) -> pd.DataFrame:
     
     # 5 if booked, 1 if clicked (but not booked), 0 otherwise
     df['relevance'] = np.select(conditions, choices, default=0)
-    return df
+
+    return df.drop(columns=['click_bool', 'booking_bool', 'gross_bookings_usd', 'position'])
