@@ -65,5 +65,5 @@ def build_missing_flags(df: pd.DataFrame, variable: str, value: float = 0.0) -> 
         value (float)       : The value to replace with pd.NA
     """
     df[variable] = df[variable].replace(value, pd.NA)
-    df[f'mflag_{variable}'] = df[variable].notna().astype(int)
+    df[f'mflag_{variable}'] = df[variable].isna().astype(int)
     return df
