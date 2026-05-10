@@ -2,7 +2,7 @@ from typing import Literal
 
 from data import load_data
 from data import train_val_split
-from data import create_relevance_target
+from data import build_relevance_scores
 
 from predict import random
 
@@ -14,7 +14,7 @@ class Pipeline:
 
     def __init__(self):
         self.train_set, self.test_set = load_data(0.2)
-        self.train_set = create_relevance_target(self.train_set)
+        self.train_set = build_relevance_scores(self.train_set)
 
     def run(self, approach: Literal['baseline']) -> tuple:
 
