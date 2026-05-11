@@ -67,7 +67,7 @@ def build_flag_variable(name: str, df: pd.DataFrame, variable: str, value: float
     # First, create flag variable
     df[name] = df[variable][df[variable] == value].astype(int)
     # Then, replace the specified values with NAs
-    df[variable] = df[variable].replace(value, pd.NA)
+    df[variable] = df[variable].replace(value, np.float64('nan'))
     return df
 
 
