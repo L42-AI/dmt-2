@@ -10,8 +10,12 @@ __all__ = ["RankDataProcessor"]
 class RankDataProcessor:
     """Shared preprocessing helpers for learning-to-rank models."""
 
-    model: XGBRanker | lgb.Booster
-    feature_names: list[str]
+    model: XGBRanker | lgb.Booster | None
+    feature_names: list[str] | None
+
+    def __init__(self):
+        self.model = None
+        self.feature_names = None
 
     def _get_feature_columns(self, df: pd.DataFrame) -> list[str]:
         """Extract feature columns, excluding metadata, target, and ranking columns."""

@@ -9,20 +9,17 @@ __all__ = ["LambdaMARTRanker"]
 class LambdaMARTRanker(RankDataProcessor):
     """LambdaMART learning-to-rank model for hotel search ranking."""
 
-    def __init__(self, num_leaves: int = 31, learning_rate: float = 0.1, n_estimators: int = 100):
-        """Initialize the LambdaMART ranker.
-
-        Args:
-            num_leaves: Number of leaves in each tree.
-            learning_rate: Learning rate for boosting.
-            n_estimators: Number of boosting rounds.
-        """
+    def __init__(
+        self,
+        num_leaves: int = 31,
+        learning_rate: float = 0.1,
+        n_estimators: int = 100
+    ):
+        super().__init__()
         self.num_leaves = num_leaves
         self.learning_rate = learning_rate
         self.n_estimators = n_estimators
-        self.model = None
-        self.feature_names = None
-
+        
     def train(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None) -> None:
         """Train the LambdaMART model.
 

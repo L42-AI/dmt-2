@@ -16,12 +16,11 @@ class XGBoostRanker(RankDataProcessor):
         max_depth: int = 6,
         random_state: int = 42,
     ):
+        super().__init__()
         self.n_estimators = n_estimators
         self.learning_rate = learning_rate
         self.max_depth = max_depth
         self.random_state = random_state
-        self.model = None
-        self.feature_names = None
 
     def train(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None) -> None:
         self.feature_names = self._get_feature_columns(train_df)
