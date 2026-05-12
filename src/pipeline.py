@@ -14,7 +14,7 @@ class Pipeline:
     TRAIN_RATIO = 0.8
 
     def __init__(self):
-        train_set, test_set = load_data(0.05)
+        train_set, test_set = load_data(0.02, random_state=42)
         train_set = build_relevance_scores(train_set)
         train_set, val_set = train_val_split(train_set, self.TRAIN_RATIO)
 
