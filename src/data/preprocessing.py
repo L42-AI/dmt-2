@@ -77,8 +77,6 @@ def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
 
     df = process_competitor_variables(df)
 
-    print(df.info())
-
     return df
 
 def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
