@@ -1,2 +1,2 @@
-from .lambdamart import LambdaMARTRanker
+from .lambdamart_ranker import LambdaMARTRanker
 from .xgboost_ranker import XGBoostRanker

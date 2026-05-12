@@ -28,7 +28,6 @@ class LambdaMARTRanker:
             'srch_id', 'prop_id', 'position', 'relevance',
             'date_time', 'checkin_date', 'click_bool', 'booking_bool',
             'gross_bookings_usd',
-            'persona_latent_x', 'persona_latent_y'
         }
         return [col for col in df.columns if col not in exclude_cols]
 
