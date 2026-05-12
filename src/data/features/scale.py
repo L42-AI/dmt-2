@@ -18,3 +18,9 @@ def clip_persona_variables(df: pd.DataFrame) -> pd.DataFrame:
     df['srch_children_count'] = df['srch_children_count'].clip(upper=4).astype(int)
     
     return df
+
+def scale_scores(df: pd.DataFrame, column: str) -> pd.Series:
+    """ Get all scores between 1 and 5 and convert them to 0-1, ignore missing values."""
+    series = df[column]
+    scaled = (series - 1.0) / (5.0 - 1.0)
+    return series.where(series.isna(), scaled)
