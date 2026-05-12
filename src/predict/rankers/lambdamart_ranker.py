@@ -1,12 +1,12 @@
 import pandas as pd
 import lightgbm as lgb
 
-from .rank_data_preprocessor import RankDataPreprocessor
+from .rank_data_processor import RankDataProcessor
 
 __all__ = ["LambdaMARTRanker"]
 
 
-class LambdaMARTRanker(RankDataPreprocessor):
+class LambdaMARTRanker(RankDataProcessor):
     """LambdaMART learning-to-rank model for hotel search ranking."""
 
     def __init__(self, num_leaves: int = 31, learning_rate: float = 0.1, n_estimators: int = 100):
@@ -30,31 +30,23 @@ class LambdaMARTRanker(RankDataPreprocessor):
             train_df: Training dataframe with 'srch_id' (group), features, and 'relevance' (target).
             val_df: Optional validation dataframe for early stopping.
         """
-        # Get feature columns
         self.feature_names = self._get_feature_columns(train_df)
-        X_train = train_df[self.feature_names].to_numpy(copy=False)
-        y_train = train_df['relevance'].to_numpy(copy=False)
-        groups_train = self._create_group_data(train_df)
+        train_df, X_train, y_train, group_train = self._prepare_rank_data(train_df, self.feature_names)
 
-        # Prepare LightGBM dataset
         train_data = lgb.Dataset(
-            X_train, label=y_train, group=groups_train,
+            X_train, label=y_train, group=group_train,
             feature_name=self.feature_names
         )
 
-        # Prepare validation dataset if provided
         valid_data = None
         if val_df is not None:
-            X_val = val_df[self.feature_names].to_numpy(copy=False)
-            y_val = val_df['relevance'].to_numpy(copy=False)
-            groups_val = self._create_group_data(val_df)
+            val_df, X_val, y_val, group_val = self._prepare_rank_data(val_df, self.feature_names)
 
             valid_data = lgb.Dataset(
-                X_val, label=y_val, group=groups_val,
+                X_val, label=y_val, group=group_val,
                 reference=train_data, feature_name=self.feature_names
             )
 
-        # Train the model
         params = {
             'objective': 'rank_xendcg',
             'metric': 'ndcg',
@@ -71,7 +63,7 @@ class LambdaMARTRanker(RankDataPreprocessor):
             callbacks=[lgb.early_stopping(10)] if valid_data is not None else None
         )
 
-        print(f"LambdaMART training complete. Trained on {len(train_df)} samples across {len(groups_train)} queries.")
+        print(f"LambdaMART training complete. Trained on {len(train_df)} samples across {len(group_train)} queries.")
 
     def predict(self, test_df: pd.DataFrame) -> pd.DataFrame:
         """Generate ranking positions using the trained model.
@@ -85,18 +77,5 @@ class LambdaMARTRanker(RankDataPreprocessor):
         if self.model is None:
             raise ValueError("Model not trained. Call train() first.")
 
-        df = test_df
-        X_test = df[self.feature_names].to_numpy(copy=False)
-
-        # Get prediction scores
-        scores = self.model.predict(X_test)
-        df['lambdamart_score'] = scores
-        # Sort by srch_id and score (descending) to get ranking
-        df.sort_values(by=['srch_id', 'lambdamart_score'], ascending=[True, False], inplace=True)
-
-        # Assign positions within each search query
-        df['position'] = df.groupby('srch_id').cumcount() + 1
-
-        # Clean up temporary column
-        df.drop(columns=['lambdamart_score'], inplace=True)
-        return df
+        scores = self.model.predict(test_df[self.feature_names].to_numpy(copy=False))
+        return self._apply_rank_scores(test_df, scores)

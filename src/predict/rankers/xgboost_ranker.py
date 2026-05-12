@@ -1,12 +1,12 @@
 import pandas as pd
 from xgboost import XGBRanker
 
-from .rank_data_preprocessor import RankDataPreprocessor
+from .rank_data_processor import RankDataProcessor
 
 __all__ = ["XGBoostRanker"]
 
 
-class XGBoostRanker(RankDataPreprocessor):
+class XGBoostRanker(RankDataProcessor):
     """XGBoost ranking model for hotel search ranking."""
 
     def __init__(
@@ -25,11 +25,7 @@ class XGBoostRanker(RankDataPreprocessor):
 
     def train(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None) -> None:
         self.feature_names = self._get_feature_columns(train_df)
-        train_df = train_df.sort_values(by='srch_id', ascending=True)
-
-        X_train = train_df[self.feature_names].to_numpy(copy=False)
-        y_train = train_df['relevance'].to_numpy(copy=False)
-        group_train = self._create_group_data(train_df)
+        train_df, X_train, y_train, group_train = self._prepare_rank_data(train_df, self.feature_names)
 
         self.model = XGBRanker(
             objective='rank:ndcg',
@@ -49,10 +45,7 @@ class XGBoostRanker(RankDataPreprocessor):
         }
 
         if val_df is not None:
-            val_df = val_df.sort_values(by='srch_id', ascending=True)
-            X_val = val_df[self.feature_names].to_numpy(copy=False)
-            y_val = val_df['relevance'].to_numpy(copy=False)
-            group_val = self._create_group_data(val_df)
+            val_df, X_val, y_val, group_val = self._prepare_rank_data(val_df, self.feature_names)
             fit_kwargs['eval_set'] = [(X_val, y_val)]
             fit_kwargs['eval_group'] = [group_val]
 
@@ -63,10 +56,5 @@ class XGBoostRanker(RankDataPreprocessor):
         if self.model is None:
             raise ValueError("Model not trained. Call train() first.")
 
-        df = test_df
-        X_test = df[self.feature_names].to_numpy(copy=False)
-        df['xgboost_score'] = self.model.predict(X_test)
-        df.sort_values(by=['srch_id', 'xgboost_score'], ascending=[True, False], inplace=True)
-        df['position'] = df.groupby('srch_id').cumcount() + 1
-        df.drop(columns=['xgboost_score'], inplace=True)
-        return df
+        scores = self.model.predict(test_df[self.feature_names].to_numpy(copy=False))
+        return self._apply_rank_scores(test_df, scores)

@@ -1,3 +1,3 @@
-from .rank_data_preprocessor import RankDataPreprocessor
+from .rank_data_preprocessor import RankDataProcessor
 from .lambdamart_ranker import LambdaMARTRanker
 from .xgboost_ranker import XGBoostRanker
