@@ -55,7 +55,7 @@ def build_checkin_dates(df: pd.DataFrame) -> pd.DataFrame:
     df['checkin_date'] = df['date_time'] + pd.to_timedelta(df['srch_booking_window'].squeeze(), unit='D') # type: ignore[arg-type]
     return df
 
-def build_missing_flags(df: pd.DataFrame, variable: str, value: float = 0.0) -> pd.DataFrame:
+def build_flag_variable(name: str, df: pd.DataFrame, variable: str, value: float = 0.0) -> pd.DataFrame:
     """ Replaces specified values in variable with NA, and creates a new variable that 
     denotes when NA has occured for a hotel.
 
@@ -64,8 +64,10 @@ def build_missing_flags(df: pd.DataFrame, variable: str, value: float = 0.0) -> 
         variable (string)   : The variable to check for specified value
         value (float)       : The value to replace with pd.NA
     """
-    df[variable] = df[variable].replace(value, pd.NA)
-    df[f'mflag_{variable}'] = df[variable].notna().astype(int)
+    # First, create flag variable
+    df[name] = df[variable][df[variable] == value].astype(int)
+    # Then, replace the specified values with NAs
+    df[variable] = df[variable].replace(value, np.float64('nan'))
     return df
 
 def build_persona_one_hot_features(df: pd.DataFrame) -> pd.DataFrame:
