@@ -64,18 +64,3 @@ class LambdaMARTRanker(RankDataProcessor):
         )
 
         print(f"LambdaMART training complete. Trained on {len(train_df)} samples across {len(group_train)} queries.")
-
-    def predict(self, test_df: pd.DataFrame) -> pd.DataFrame:
-        """Generate ranking positions using the trained model.
-
-        Args:
-            test_df: Test dataframe with features and 'srch_id'.
-
-        Returns:
-            Dataframe with assigned 'position' column.
-        """
-        if self.model is None:
-            raise ValueError("Model not trained. Call train() first.")
-
-        scores = self.model.predict(test_df[self.feature_names].to_numpy(copy=False))
-        return self._apply_rank_scores(test_df, scores)

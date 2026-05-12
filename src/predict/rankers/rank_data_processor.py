@@ -1,11 +1,17 @@
 import numpy as np
 import pandas as pd
 
+import lightgbm as lgb
+from xgboost import XGBRanker
+
 __all__ = ["RankDataProcessor"]
 
 
 class RankDataProcessor:
     """Shared preprocessing helpers for learning-to-rank models."""
+
+    model: XGBRanker | lgb.Booster
+    feature_names: list[str]
 
     def _get_feature_columns(self, df: pd.DataFrame) -> list[str]:
         """Extract feature columns, excluding metadata, target, and ranking columns."""
@@ -43,3 +49,18 @@ class RankDataProcessor:
         ranked_df['position'] = ranked_df.groupby('srch_id').cumcount() + 1
         ranked_df.drop(columns=[score_column], inplace=True)
         return ranked_df
+    
+    def predict(self, test_df: pd.DataFrame) -> pd.DataFrame:
+        """Generate ranking positions using the trained model.
+
+        Args:
+            test_df: Test dataframe with features and 'srch_id'.
+
+        Returns:
+            Dataframe with assigned 'position' column.
+        """
+        if self.model is None:
+            raise ValueError("Model not trained. Call train() first.")
+
+        scores = self.model.predict(test_df[self.feature_names].to_numpy(copy=False))
+        return self._apply_rank_scores(test_df, scores)
