@@ -9,6 +9,7 @@ dependencies = [
     "jupyter>=1.1.1",
     "kaggle>=2.1.2",
     "kagglehub>=1.0.1",
+    "lightgbm>=4.6.0",
     "matplotlib>=3.10.9",
     "numba>=0.65.1",
     "pandas>=3.0.2",
