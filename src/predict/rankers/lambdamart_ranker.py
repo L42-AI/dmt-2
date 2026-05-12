@@ -1,11 +1,12 @@
 import pandas as pd
-import numpy as np
 import lightgbm as lgb
+
+from .rank_data_preprocessor import RankDataPreprocessor
 
 __all__ = ["LambdaMARTRanker"]
 
 
-class LambdaMARTRanker:
+class LambdaMARTRanker(RankDataPreprocessor):
     """LambdaMART learning-to-rank model for hotel search ranking."""
 
     def __init__(self, num_leaves: int = 31, learning_rate: float = 0.1, n_estimators: int = 100):
@@ -21,20 +22,6 @@ class LambdaMARTRanker:
         self.n_estimators = n_estimators
         self.model = None
         self.feature_names = None
-
-    def _get_feature_columns(self, df: pd.DataFrame) -> list[str]:
-        """Extract feature columns, excluding metadata and target columns."""
-        exclude_cols = {
-            'srch_id', 'prop_id', 'position', 'relevance',
-            'date_time', 'checkin_date', 'click_bool', 'booking_bool',
-            'gross_bookings_usd',
-        }
-        return [col for col in df.columns if col not in exclude_cols]
-
-    def _create_group_data(self, df: pd.DataFrame) -> tuple[np.ndarray, list[int]]:
-        """Create group data for LightGBM ranking."""
-        grouped = df.groupby('srch_id').size().values
-        return grouped
 
     def train(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None) -> None:
         """Train the LambdaMART model.

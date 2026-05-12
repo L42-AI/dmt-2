@@ -1,11 +1,12 @@
-import numpy as np
 import pandas as pd
 from xgboost import XGBRanker
+
+from .rank_data_preprocessor import RankDataPreprocessor
 
 __all__ = ["XGBoostRanker"]
 
 
-class XGBoostRanker:
+class XGBoostRanker(RankDataPreprocessor):
     """XGBoost ranking model for hotel search ranking."""
 
     def __init__(
@@ -22,28 +23,9 @@ class XGBoostRanker:
         self.model = None
         self.feature_names = None
 
-    def _get_feature_columns(self, df: pd.DataFrame) -> list[str]:
-        exclude_cols = {
-            'srch_id', 'prop_id', 'position', 'relevance',
-            'date_time', 'checkin_date', 'click_bool', 'booking_bool',
-            'gross_bookings_usd',
-        }
-        return [col for col in df.columns if col not in exclude_cols]
-
-    def _sort_for_ranking(self, df: pd.DataFrame) -> pd.DataFrame:
-        sort_cols = ['srch_id']
-        ascending = [True]
-        if 'position' in df.columns:
-            sort_cols.append('position')
-            ascending.append(True)
-        return df.sort_values(by=sort_cols, ascending=ascending)
-
-    def _create_group_data(self, df: pd.DataFrame) -> np.ndarray:
-        return df.groupby('srch_id').size().to_numpy()
-
     def train(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None) -> None:
         self.feature_names = self._get_feature_columns(train_df)
-        train_df = self._sort_for_ranking(train_df)
+        train_df = train_df.sort_values(by='srch_id', ascending=True)
 
         X_train = train_df[self.feature_names].to_numpy(copy=False)
         y_train = train_df['relevance'].to_numpy(copy=False)
@@ -67,7 +49,7 @@ class XGBoostRanker:
         }
 
         if val_df is not None:
-            val_df = self._sort_for_ranking(val_df)
+            val_df = val_df.sort_values(by='srch_id', ascending=True)
             X_val = val_df[self.feature_names].to_numpy(copy=False)
             y_val = val_df['relevance'].to_numpy(copy=False)
             group_val = self._create_group_data(val_df)
