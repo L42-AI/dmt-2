@@ -1,11 +1,16 @@
 from typing import Literal
-
 from data import load_data
 from data import preprocess_data
 from data import train_val_split
 from data import build_relevance_scores
 
-from predict import clear_predictions, random, ceiling, LambdaMARTRanker
+from predict import (
+    clear_predictions,
+    random,
+    ceiling,
+    LambdaMARTRanker,
+    XGBoostRanker,
+)
 
 from evaluate import compute_accuracy
 
@@ -13,8 +18,10 @@ class Pipeline:
 
     TRAIN_RATIO = 0.8
 
-    def __init__(self):
-        train_set, test_set = load_data(0.02, random_state=42)
+    
+
+    def __init__(self, sample_size: float = 1):
+        train_set, test_set = load_data(sample_size, random_state=42)
         train_set = build_relevance_scores(train_set)
         train_set, val_set = train_val_split(train_set, self.TRAIN_RATIO)
 
@@ -30,18 +37,17 @@ class Pipeline:
         self.val_set = clear_predictions(self._val_set_base)
         self.test_set = clear_predictions(self._test_set_base)
 
-    def run(self, approach: Literal['baseline', 'advanced', 'ceiling']) -> tuple:
+    def run(self, approach: Literal['baseline', 'advanced', 'ceiling', 'xgboost']) -> tuple:
         self.reset_data()
 
-        match approach:
-            case 'baseline':
-                return self._run_baseline(self.train_set, self.val_set, self.test_set)
-            case 'advanced':
-                return self._run_advanced(self.train_set, self.val_set, self.test_set)
-            case 'ceiling':
-                return self._run_ceiling(self.train_set, self.val_set, self.test_set)
-            case _:
-                raise ValueError(f"Unknown approach: {approach}")
+        APPROACH_MAP = {
+            'baseline': self._run_baseline,
+            'advanced': self._run_advanced,
+            'ceiling': self._run_ceiling,
+            'xgboost': self._run_xgboost,
+        }
+
+        return APPROACH_MAP[approach](self.train_set, self.val_set, self.test_set)
 
     def _run_predictions(self, train_set, val_set, test_set, predict_func, test_predict_func) -> tuple:
         train_predictions = predict_func(train_set)
@@ -67,4 +73,9 @@ class Pipeline:
         ranker = LambdaMARTRanker(num_leaves=31, learning_rate=0.1, n_estimators=100)
         ranker.train(train_set, val_set)
 
+        return self._run_predictions(train_set, val_set, test_set, predict_func=ranker.predict, test_predict_func=ranker.predict)
+
+    def _run_xgboost(self, train_set, val_set, test_set):
+        ranker = XGBoostRanker()
+        ranker.train(train_set, val_set)
         return self._run_predictions(train_set, val_set, test_set, predict_func=ranker.predict, test_predict_func=ranker.predict)
