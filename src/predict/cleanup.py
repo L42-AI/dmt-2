@@ -17,4 +17,5 @@ def clear_predictions(df: pd.DataFrame) -> pd.DataFrame:
     if not columns_to_drop:
         return df.copy()
 
-    return df.drop(columns=columns_to_drop)
+    df.drop(columns=columns_to_drop, inplace=True)
+    return df

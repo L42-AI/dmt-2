@@ -27,7 +27,8 @@ def build_relevance_scores(df: pd.DataFrame) -> pd.DataFrame:
     # 5 if booked, 1 if clicked (but not booked), 0 otherwise
     df['relevance'] = np.select(conditions, choices, default=0)
 
-    return df.drop(columns=['click_bool', 'booking_bool', 'gross_bookings_usd', 'position'])
+    df.drop(columns=['click_bool', 'booking_bool', 'gross_bookings_usd', 'position'], inplace=True)
+    return df
 
 def build_binary_season(name: str, df: pd.DataFrame, start: int, end: int, ref: str = 'date_time') -> pd.DataFrame:
     """Build a boolean variable which flags whether a date-time of a query is within a specified
@@ -72,8 +73,6 @@ def build_flag_variable(name: str, df: pd.DataFrame, variable: str, value: float
 
 def build_persona_one_hot_features(df: pd.DataFrame) -> pd.DataFrame:
     """One-hot encode the parent and children persona variables."""
-    df = df.copy()
-
     df['srch_adults_count'] = pd.Categorical(df['srch_adults_count'], categories=range(6))
     df['srch_children_count'] = pd.Categorical(df['srch_children_count'], categories=range(5))
 

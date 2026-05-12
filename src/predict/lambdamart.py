@@ -46,8 +46,8 @@ class LambdaMARTRanker:
         """
         # Get feature columns
         self.feature_names = self._get_feature_columns(train_df)
-        X_train = train_df[self.feature_names].values
-        y_train = train_df['relevance'].values
+        X_train = train_df[self.feature_names].to_numpy(copy=False)
+        y_train = train_df['relevance'].to_numpy(copy=False)
         groups_train = self._create_group_data(train_df)
 
         # Prepare LightGBM dataset
@@ -59,8 +59,8 @@ class LambdaMARTRanker:
         # Prepare validation dataset if provided
         valid_data = None
         if val_df is not None:
-            X_val = val_df[self.feature_names].values
-            y_val = val_df['relevance'].values
+            X_val = val_df[self.feature_names].to_numpy(copy=False)
+            y_val = val_df['relevance'].to_numpy(copy=False)
             groups_val = self._create_group_data(val_df)
 
             valid_data = lgb.Dataset(
@@ -99,20 +99,18 @@ class LambdaMARTRanker:
         if self.model is None:
             raise ValueError("Model not trained. Call train() first.")
 
-        df = test_df.copy()
-        X_test = df[self.feature_names].values
+        df = test_df
+        X_test = df[self.feature_names].to_numpy(copy=False)
 
         # Get prediction scores
         scores = self.model.predict(X_test)
         df['lambdamart_score'] = scores
-
         # Sort by srch_id and score (descending) to get ranking
-        df = df.sort_values(by=['srch_id', 'lambdamart_score'], ascending=[True, False])
+        df.sort_values(by=['srch_id', 'lambdamart_score'], ascending=[True, False], inplace=True)
 
         # Assign positions within each search query
         df['position'] = df.groupby('srch_id').cumcount() + 1
 
         # Clean up temporary column
-        df = df.drop(columns=['lambdamart_score'])
-
+        df.drop(columns=['lambdamart_score'], inplace=True)
         return df

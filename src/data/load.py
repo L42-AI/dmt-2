@@ -31,7 +31,7 @@ def load_submission_sample(path: Path | str | None = None) -> pd.DataFrame:
         path = _competition_data_path(path)
     else:
         path = Path(path)
-    return pd.read_csv(path / 'submission_sample.csv')
+    return pd.read_csv(path / 'submission_sample.csv', low_memory=False)
 
 def load_training_set(
     path: Path | str | None = None,
@@ -44,8 +44,7 @@ def load_training_set(
     """
     path = _competition_data_path(path)
 
-    df = pd.read_csv(path / 'training_set_VU_DM.csv')
-    df['date_time'] = pd.to_datetime(df['date_time'])
+    df = pd.read_csv(path / 'training_set_VU_DM.csv', low_memory=False, parse_dates=['date_time'])
     return _sample_queries(df, query_sample_proportion, random_state)
 
 def load_test_set(
@@ -59,8 +58,7 @@ def load_test_set(
     """
     path = _competition_data_path(path)
 
-    df = pd.read_csv(path / 'test_set_VU_DM.csv')
-    df['date_time'] = pd.to_datetime(df['date_time'])
+    df = pd.read_csv(path / 'test_set_VU_DM.csv', low_memory=False, parse_dates=['date_time'])
     return _sample_queries(df, query_sample_proportion, random_state)
 
 def load_data(
@@ -74,5 +72,5 @@ def load_data(
     path = _competition_data_path(None)
     return (
         load_training_set(path, query_sample_proportion, random_state),
-        load_test_set(path, query_sample_proportion, random_state)
+        load_test_set(path, query_sample_proportion, random_state),
     )

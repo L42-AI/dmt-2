@@ -11,9 +11,8 @@ def export_submission(data: pd.DataFrame, push_to_kaggle=False):
     comp_id='dmt-2026-2nd-assignment'
     message='Pipeline submission from DMT-2 assignment'
 
-    submission_df = data[['srch_id', 'prop_id', 'position']].copy()
-
-    submission_df.sort_values(['srch_id', 'position']).drop(columns=['position'], inplace=True)
+    submission_df = data[['srch_id', 'prop_id', 'position']]
+    submission_df = submission_df.sort_values(['srch_id', 'position']).drop(columns=['position'])
 
     submission_df.to_csv(file, index=False)
 

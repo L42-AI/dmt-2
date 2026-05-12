@@ -13,16 +13,17 @@ def ceiling(test_set: pd.DataFrame) -> pd.DataFrame:
     if "relevance" not in test_set.columns:
         raise KeyError("Expected 'relevance' column for the ceiling predictor.")
 
-    df = test_set.copy()
+    df = test_set
 
     # Stable tie-breakers keep the output deterministic when labels are equal.
     df["__ceiling_tie_breaker"] = np.arange(len(df))
-    df = df.sort_values(
+    df.sort_values(
         by=["srch_id", "relevance", "__ceiling_tie_breaker"],
         ascending=[True, False, True],
+        inplace=True,
     )
 
     df["position"] = df.groupby("srch_id").cumcount() + 1
-    df = df.drop(columns=["__ceiling_tie_breaker"])
+    df.drop(columns=["__ceiling_tie_breaker"], inplace=True)
 
     return df

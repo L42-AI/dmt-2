@@ -12,10 +12,8 @@ def scale_bounded(df: pd.DataFrame) -> pd.DataFrame:
 
 def clip_persona_variables(df: pd.DataFrame) -> pd.DataFrame:
     """Caps parent and children counts and converts them to discrete integer categories."""
-    df = df.copy()
-    
-    df['srch_adults_count'] = df['srch_adults_count'].clip(upper=5).astype(int)
-    df['srch_children_count'] = df['srch_children_count'].clip(upper=4).astype(int)
+    df['srch_adults_count'] = df['srch_adults_count'].clip(upper=5).astype('uint8')
+    df['srch_children_count'] = df['srch_children_count'].clip(upper=4).astype('uint8')
     
     return df
 

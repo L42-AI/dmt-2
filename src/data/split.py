@@ -1,7 +1,7 @@
 import pandas as pd
 
 def train_val_split(data: pd.DataFrame, train_ratio: float = 0.8) -> tuple[pd.DataFrame, pd.DataFrame]:
-    data = data.sort_values('date_time')
+    data.sort_values('date_time', inplace=True, kind='mergesort')
 
     sessions = data[['srch_id', 'date_time']].drop_duplicates()
 
