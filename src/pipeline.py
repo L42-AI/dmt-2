@@ -37,12 +37,12 @@ class Pipeline:
         self.val_set = clear_predictions(self._val_set_base)
         self.test_set = clear_predictions(self._test_set_base)
 
-    def run(self, approach: Literal['baseline', 'advanced', 'ceiling', 'xgboost']) -> tuple:
+    def run(self, approach: Literal['baseline', 'lambdamart', 'ceiling', 'xgboost']) -> tuple:
         self.reset_data()
 
         APPROACH_MAP = {
             'baseline': self._run_baseline,
-            'advanced': self._run_advanced,
+            'lambdamart': self._run_lambdamart,
             'ceiling': self._run_ceiling,
             'xgboost': self._run_xgboost,
         }
@@ -69,7 +69,7 @@ class Pipeline:
     def _run_baseline(self, train_set, val_set, test_set):
         return self._run_predictions(train_set, val_set, test_set, predict_func=random, test_predict_func=random)
 
-    def _run_advanced(self, train_set, val_set, test_set):
+    def _run_lambdamart(self, train_set, val_set, test_set):
         ranker = LambdaMARTRanker(num_leaves=31, learning_rate=0.1, n_estimators=100)
         ranker.train(train_set, val_set)
 
