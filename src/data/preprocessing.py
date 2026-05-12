@@ -9,17 +9,18 @@ def process_competitor_variables(df: pd.DataFrame) -> pd.DataFrame:
         inv_col = f'comp{i}_inv'
         diff_col = f'comp{i}_rate_percent_diff'
 
+        missing_col = f'comp{i}_missing'
+        has_better_price_col = f'comp{i}_has_better_price'
+        has_worse_price_col = f'comp{i}_has_worse_price'
 
-        df[f'{rate_col}_missing'] = df[rate_col].isna().astype(int)
-        df[rate_col] = df[rate_col].fillna(-1)
+        df[missing_col] = (df[rate_col].isna() | df[inv_col].isna() | df[diff_col].isna()).astype(int)
+        df[has_better_price_col] = (df[rate_col] < 0.0).fillna(False).astype(int)
+        df[has_worse_price_col] = (df[rate_col] > 0.0).fillna(False).astype(int)
 
-        df[inv_col] = df[inv_col].where(df[inv_col] > 0.0)
-        df[f'{inv_col}_missing'] = df[inv_col].isna().astype(int)
-        df[inv_col] = df[inv_col].fillna(-1)
+        df[inv_col] = df[inv_col].where(df[missing_col] == 0, other=-1.0)
+        df[diff_col] = df[diff_col].where(df[missing_col] == 0, other=-1.0)
 
-        df[diff_col] = df[diff_col].where(df[diff_col] > 0.0)
-        df[f'{diff_col}_missing'] = df[diff_col].isna().astype(int)
-        df[diff_col] = df[diff_col].fillna(-1)
+        df.drop(columns=[rate_col], inplace=True)
 
     return df
 
@@ -76,9 +77,7 @@ def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
 
     df = process_competitor_variables(df)
 
-    # TODO: comp*_rate
-    # TODO: comp*_inv
-    # TODO: comp*_rate_percent_diff
+    print(df.info())
 
     return df
 
