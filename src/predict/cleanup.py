@@ -7,7 +7,7 @@ PREDICTION_COLUMNS = (
     "position",
     "random_score",
     "lambdamart_score",
-    "__ceiling_tie_breaker",
+    "ceiling_tie_breaker",
 )
 
 
