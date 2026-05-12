@@ -67,3 +67,17 @@ def build_missing_flags(df: pd.DataFrame, variable: str, value: float = 0.0) -> 
     df[variable] = df[variable].replace(value, pd.NA)
     df[f'mflag_{variable}'] = df[variable].notna().astype(int)
     return df
+
+def build_persona_one_hot_features(df: pd.DataFrame) -> pd.DataFrame:
+    """One-hot encode the parent and children persona variables."""
+    df = df.copy()
+
+    df['srch_adults_count'] = pd.Categorical(df['srch_adults_count'], categories=range(6))
+    df['srch_children_count'] = pd.Categorical(df['srch_children_count'], categories=range(5))
+
+    return pd.get_dummies(
+        df,
+        columns=['srch_adults_count', 'srch_children_count'],
+        prefix=['adults', 'children'],
+        dtype=int,
+    )
