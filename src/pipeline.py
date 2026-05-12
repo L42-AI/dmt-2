@@ -7,7 +7,7 @@ from data import build_relevance_scores
 
 from predict import clear_predictions, random, ceiling, LambdaMARTRanker
 
-from evaluate import compute_loss
+from evaluate import compute_accuracy
 
 class Pipeline:
 
@@ -43,21 +43,25 @@ class Pipeline:
             case _:
                 raise ValueError(f"Unknown approach: {approach}")
 
-    def _run_baseline(self, train_set, val_set, test_set):
+    def _run_predictions(self, train_set, val_set, test_set, predict_func, test_predict_func) -> tuple:
+        train_predictions = predict_func(train_set)
+        train_acc = compute_accuracy(train_predictions)
 
-        train_predictions = random(train_set)
-        train_loss = compute_loss(train_predictions)
+        val_predictions = predict_func(val_set)
+        val_acc = compute_accuracy(val_predictions)
 
-        val_predictions = random(val_set)
-        val_loss = compute_loss(val_predictions)
+        test_predictions = test_predict_func(test_set)
 
-        test_predictions = random(test_set)
-        test_loss = None
-        
         return (
             train_predictions, val_predictions, test_predictions,
-            train_loss, val_loss, test_loss
-            )
+            train_acc, val_acc, None
+        )
+
+    def _run_ceiling(self, train_set, val_set, test_set):
+        return self._run_predictions(train_set, val_set, test_set, predict_func=ceiling, test_predict_func=clear_predictions)
+
+    def _run_baseline(self, train_set, val_set, test_set):
+        return self._run_predictions(train_set, val_set, test_set, predict_func=random, test_predict_func=random)
 
     def _run_advanced(self, train_set, val_set, test_set):
         """Run LambdaMART learning-to-rank approach."""
@@ -65,32 +69,4 @@ class Pipeline:
         ranker = LambdaMARTRanker(num_leaves=31, learning_rate=0.1, n_estimators=100)
         ranker.train(train_set, val_set)
 
-        # Generate predictions
-        train_predictions = ranker.predict(train_set)
-        train_loss = compute_loss(train_predictions)
-
-        val_predictions = ranker.predict(val_set)
-        val_loss = compute_loss(val_predictions)
-
-        test_predictions = ranker.predict(test_set)
-
-        return (
-            train_predictions, val_predictions, test_predictions,
-            train_loss, val_loss, None
-        )
-
-    def _run_ceiling(self, train_set, val_set, test_set):
-        """Run the theoretical ceiling predictor on labeled sets."""
-        train_predictions = ceiling(train_set)
-        train_loss = compute_loss(train_predictions)
-
-        val_predictions = ceiling(val_set)
-        val_loss = compute_loss(val_predictions)
-
-        # The test set is unlabeled, so a true ceiling ranking is not defined there.
-        test_predictions = clear_predictions(test_set)
-
-        return (
-            train_predictions, val_predictions, test_predictions,
-            train_loss, val_loss, None
-        )
+        return self._run_predictions(train_set, val_set, test_set, predict_func=ranker.predict, test_predict_func=ranker.predict)

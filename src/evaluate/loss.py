@@ -6,7 +6,7 @@ from numba import njit
 NDCG_K = 5
 
 __all__ = [
-    "compute_loss",
+    "compute_accuracy",
     "dcg",
     "ndcg_5",
 ]
@@ -53,7 +53,7 @@ def _compute_ndcg_bulk(relevances, group_boundaries, k):
     return total_ndcg / valid_groups if valid_groups > 0 else 0.0
 
 
-def compute_loss(df: pd.DataFrame) -> float:
+def compute_accuracy(df: pd.DataFrame) -> float:
     """Calculate mean NDCG@5 across all search queries in the input dataframe."""
     # Sort globally once so each query is contiguous and already in rank order.
     df_sorted = df.sort_values(by=["srch_id", "position"], ascending=[True, True])
