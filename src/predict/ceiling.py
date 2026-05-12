@@ -5,14 +5,6 @@ __all__ = ["ceiling"]
 
 
 def ceiling(test_set: pd.DataFrame) -> pd.DataFrame:
-    """Assign the best possible ranking position within each search query.
-
-    This oracle ranking sorts items by the ground-truth ``relevance`` label in
-    descending order, which yields the highest achievable score on labeled data.
-    """
-    if "relevance" not in test_set.columns:
-        raise KeyError("Expected 'relevance' column for the ceiling predictor.")
-
     df = test_set
 
     # Stable tie-breakers keep the output deterministic when labels are equal.
