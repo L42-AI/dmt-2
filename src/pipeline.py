@@ -64,8 +64,6 @@ class Pipeline:
         return self._run_predictions(train_set, val_set, test_set, predict_func=random, test_predict_func=random)
 
     def _run_advanced(self, train_set, val_set, test_set):
-        """Run LambdaMART learning-to-rank approach."""
-        # Initialize and train the ranker
         ranker = LambdaMARTRanker(num_leaves=31, learning_rate=0.1, n_estimators=100)
         ranker.train(train_set, val_set)
 
