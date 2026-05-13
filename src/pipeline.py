@@ -3,6 +3,7 @@ from data import load_data
 from data import preprocess_data
 from data import train_val_split
 from data import build_relevance_scores
+from data.feature_selection import select_feature_columns
 
 from predict import (
     clear_predictions,
@@ -28,6 +29,8 @@ class Pipeline:
         self._train_set_base = preprocess_data(train_set)
         self._val_set_base = preprocess_data(val_set)
         self._test_set_base = preprocess_data(test_set)
+
+        self.feature_cols = select_feature_columns(self._train_set_base)
 
         self.reset_data()
 

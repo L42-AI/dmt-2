@@ -1,5 +1,6 @@
 from .features.scale import scale_scores
-from .features.features import build_binary_season
+from .features.features import add_query_relative_features, build_binary_season, add_date_features, add_travel_party_features, add_price_features, add_history_match_features, add_competitor_summary_features
+
 import pandas as pd
 
 def process_competitor_variables(df: pd.DataFrame) -> pd.DataFrame:
@@ -83,6 +84,14 @@ def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     """ Build new features from existing ones, for example by combining them or applying transformations."""
     df['checkin_date'] = df['date_time'] + pd.to_timedelta(df['srch_booking_window'].squeeze(), unit='D') # type: ignore[arg-type]
     df = build_binary_season(name = 'off_season', df = df, start = 8, end = 11, ref='date_time')
+
+    df = add_date_features(df)
+    df = add_travel_party_features(df)
+    df = add_price_features(df)
+    df = add_history_match_features(df)
+    df = add_competitor_summary_features(df)
+    df = add_query_relative_features(df)
+    
     return df
 
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
