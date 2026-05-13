@@ -11,3 +11,4 @@ submission.csv
 # Virtual environments
 .venv
 metric_history.csv
+*.parquet
