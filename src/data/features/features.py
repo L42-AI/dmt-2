@@ -27,7 +27,6 @@ def build_relevance_scores(df: pd.DataFrame) -> pd.DataFrame:
     # 5 if booked, 1 if clicked (but not booked), 0 otherwise
     df['relevance'] = np.select(conditions, choices, default=0)
 
-    df.drop(columns=['click_bool', 'booking_bool', 'gross_bookings_usd', 'position'], inplace=True)
     return df
 
 def build_binary_season(name: str, df: pd.DataFrame, start: int, end: int, ref: str = 'date_time') -> pd.DataFrame:
