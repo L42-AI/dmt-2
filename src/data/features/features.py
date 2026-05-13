@@ -85,6 +85,13 @@ def build_persona_one_hot_features(df: pd.DataFrame) -> pd.DataFrame:
         dtype=int,
     )
 
+def build_prop_avg_price(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Computes the average price per property and adds it as a new column.
+    """
+    df['prop_avg_price'] = df.groupby('prop_id')['price_usd'].transform('mean')
+    return df
+
 def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Extract model-usable date features from date_time and checkin_date
@@ -214,6 +221,7 @@ def add_query_relative_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # For each of these columns, we will compute features that describe 
     # how the hotel's value compares to other hotels in the same search (srch_id)
+    new_cols = {}
     for col in cols:
         if col not in df.columns:
             continue
@@ -225,13 +233,16 @@ def add_query_relative_features(df: pd.DataFrame) -> pd.DataFrame:
         min_val = g.transform('min')
         max_val = g.transform('max')
 
-        df[f'{col}_minus_query_mean'] = (x - mean).fillna(0)
-        df[f'{col}_div_query_mean'] = (
+        new_cols[f'{col}_minus_query_mean'] = (x - mean).fillna(0)
+        new_cols[f'{col}_div_query_mean'] = (
             x / mean.replace(0, np.nan)
         ).replace([np.inf, -np.inf], np.nan).fillna(1)
 
-        df[f'{col}_query_pct_rank'] = g.rank(pct=True).fillna(0)
-        df[f'{col}_is_query_min'] = (x == min_val).fillna(False).astype('uint8')
-        df[f'{col}_is_query_max'] = (x == max_val).fillna(False).astype('uint8')
+        new_cols[f'{col}_query_pct_rank'] = g.rank(pct=True).fillna(0)
+        new_cols[f'{col}_is_query_min'] = (x == min_val).fillna(False).astype('uint8')
+        new_cols[f'{col}_is_query_max'] = (x == max_val).fillna(False).astype('uint8')
 
+    if new_cols:
+        new_df = pd.DataFrame(new_cols, index=df.index)
+        df = pd.concat([df, new_df], axis = 1)
     return df  

@@ -5,8 +5,8 @@ from logistics import init_log, record_metrics
 pipeline = Pipeline()
 
 # Setup approaches and metrics (to be shown in logs)
-# approaches = ['ceiling', 'baseline', 'lambdamart', 'xgboost']
-approaches = ['ceiling', 'baseline']
+approaches = ['ceiling', 'baseline', 'lambdamart', 'xgboost']
+# approaches = ['ceiling', 'baseline']
 metric_names = ['Training Accuracy', 'Validation Accuracy', 'Test Accuracy']
 
 # Write header
