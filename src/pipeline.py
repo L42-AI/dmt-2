@@ -21,7 +21,9 @@ class Pipeline:
 
     
 
-    def __init__(self, sample_size: float = 1):
+    def __init__(self, parameters: dict, sample_size: float = 1):
+        self.parameters = parameters
+
         train_set, test_set = load_data(sample_size, random_state=42)
         train_set = build_relevance_scores(train_set)
         train_set, val_set = train_val_split(train_set, self.TRAIN_RATIO)
@@ -73,7 +75,8 @@ class Pipeline:
         return self._run_predictions(train_set, val_set, test_set, predict_func=random, test_predict_func=random)
 
     def _run_lambdamart(self, train_set, val_set, test_set):
-        ranker = LambdaMARTRanker(num_leaves=31, learning_rate=0.1, n_estimators=100)
+        params = self.parameters['lambdamart']
+        ranker = LambdaMARTRanker(num_leaves=params['num_leaves'], learning_rate=params['learning_rate'], n_estimators=params['n_estimators'])
         ranker.train(train_set, val_set)
 
         return self._run_predictions(train_set, val_set, test_set, predict_func=ranker.predict, test_predict_func=ranker.predict)

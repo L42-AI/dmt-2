@@ -2,11 +2,19 @@ from dotenv import load_dotenv
 load_dotenv()
 from pipeline import Pipeline
 from logistics import init_log, record_metrics
-pipeline = Pipeline()
+
+parameters = {
+    'lambdamart': {
+        'num_leaves'        : 31,
+        'learning_rate'     : 0.1,
+        'n_estimators'      : 100
+    }
+}
+pipeline = Pipeline(parameters = parameters, sample_size = 0.8)
 
 # Setup approaches and metrics (to be shown in logs)
-approaches = ['ceiling', 'baseline', 'lambdamart', 'xgboost']
-# approaches = ['ceiling', 'baseline']
+# approaches = ['ceiling', 'baseline', 'lambdamart', 'xgboost']
+approaches = ['lambdamart', 'xgboost']
 metric_names = ['Training Accuracy', 'Validation Accuracy', 'Test Accuracy']
 
 # Write header
