@@ -1,6 +1,6 @@
 from typing import Literal
 from data import load_data
-from data import preprocess_data
+from data import preprocess_data, cross_set_preprocessing, select_randomized_instances
 from data import train_val_split
 from data import build_relevance_scores
 from data.feature_selection import select_feature_columns
@@ -19,18 +19,32 @@ class Pipeline:
 
     TRAIN_RATIO = 0.8
 
-    
-
     def __init__(self, parameters: dict, sample_size: float = 1):
         self.parameters = parameters
 
         train_set, test_set = load_data(sample_size, random_state=42)
-        train_set = build_relevance_scores(train_set)
+        # Validation Split
         train_set, val_set = train_val_split(train_set, self.TRAIN_RATIO)
 
+        # Copy the training data with exclusive variables 
+        train_with_excl_vars = train_set.copy()
+
+        # Relevance scores, training_excl variables are removed
+        train_set = build_relevance_scores(train_set)
+        val_set = build_relevance_scores(val_set)
+
+        # Preprocessing
         self._train_set_base = preprocess_data(train_set)
         self._val_set_base = preprocess_data(val_set)
         self._test_set_base = preprocess_data(test_set)
+
+        # Cross-Set Preprocessing ()
+        self._train_set_base, self._val_set_base, self._test_set_base = cross_set_preprocessing(
+            train_with_excl_vars, # Hack to get position, which was removed in the preprocessing
+            self._train_set_base,
+            self._val_set_base,
+            self._test_set_base
+        )
 
         self.feature_cols = select_feature_columns(self._train_set_base)
 
@@ -78,6 +92,15 @@ class Pipeline:
         params = self.parameters['lambdamart']
         ranker = LambdaMARTRanker(num_leaves=params['num_leaves'], learning_rate=params['learning_rate'], n_estimators=params['n_estimators'])
         ranker.train(train_set, val_set)
+
+        # See feature importance of training evaluation (not validation!)
+        
+        print('Most important features')
+        feature_importance_df = ranker.get_feature_importance(importance_type='gain', ascending=False)
+        print(feature_importance_df.head(10))
+        print('Least important features')
+        feature_importance_df = ranker.get_feature_importance(importance_type='gain', ascending=True)
+        print(feature_importance_df.head(10))
 
         return self._run_predictions(train_set, val_set, test_set, predict_func=ranker.predict, test_predict_func=ranker.predict)
 
