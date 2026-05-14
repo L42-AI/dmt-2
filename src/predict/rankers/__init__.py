@@ -1,3 +1,4 @@
 from .rank_data_processor import RankDataProcessor
 from .lambdamart_ranker import LambdaMARTRanker
 from .xgboost_ranker import XGBoostRanker
+from .content_based_recommender import ContentKnowledgeRecommender
