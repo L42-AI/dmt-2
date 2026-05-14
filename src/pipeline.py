@@ -84,21 +84,33 @@ class Pipeline:
         ranker = LambdaMARTRanker(num_leaves=params['num_leaves'], learning_rate=params['learning_rate'], n_estimators=params['n_estimators'])
         ranker.train(train_set, val_set)
 
-        return self._run_predictions(train_set, val_set, test_set, predict_func=ranker.predict, test_predict_func=ranker.predict)
+        return self._run_predictions(
+            train_set,
+            val_set,
+            test_set,
+            predict_func=ranker.predict,
+            test_predict_func=ranker.predict
+        )
 
     def _run_xgboost(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):        
         ranker = XGBoostRanker()
         ranker.train(train_set, val_set)
-        return self._run_predictions(train_set, val_set, test_set, predict_func=ranker.predict, test_predict_func=ranker.predict)
+        return self._run_predictions(
+            train_set,
+            val_set,
+            test_set,
+            predict_func=ranker.predict,
+            test_predict_func=ranker.predict
+        )
 
-    def _run_content_knowledge(self, train_set, val_set, test_set):
+    def _run_content_knowledge(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
         recommender = ContentKnowledgeRecommender()
         recommender.train(train_set, val_set)
 
         return self._run_predictions(
-        train_set,
-        val_set,
-        test_set,
-        predict_func=recommender.predict,
-        test_predict_func=recommender.predict,
-    )
+            train_set,
+            val_set,
+            test_set,
+            predict_func=recommender.predict,
+            test_predict_func=recommender.predict,
+        )
