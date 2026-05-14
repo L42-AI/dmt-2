@@ -76,8 +76,6 @@ def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
     df['orig_destination_distance_missing'] = df['orig_destination_distance'].isna().astype('uint8')
     df['orig_destination_distance'] = df['orig_destination_distance'].fillna(-1)
 
-    df = process_competitor_variables(df)
-
     return df
 
 def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -91,6 +89,7 @@ def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df = add_history_match_features(df)
     df = add_competitor_summary_features(df)
     df = add_query_relative_features(df)
+    df = process_competitor_variables(df)
     
     return df
 
