@@ -5,7 +5,7 @@ import pandas as pd
 from data import load_data
 from data import preprocess_data
 from data import train_val_split
-from data import build_relevance_scores
+from data import convert_target_to_relevance_scores
 from data.feature_selection import select_feature_columns
 
 from predict import (
@@ -29,7 +29,7 @@ class Pipeline:
         self.parameters = parameters
 
         train_set, test_set = load_data(sample_size, random_state=42)
-        train_set = build_relevance_scores(train_set)
+        train_set = convert_target_to_relevance_scores(train_set)
         train_set, val_set = train_val_split(train_set, self.TRAIN_RATIO)
 
         self._train_set_base = preprocess_data(train_set)

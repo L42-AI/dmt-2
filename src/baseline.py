@@ -2,14 +2,14 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 from data.load import load_training_set
-from data.features import build_relevance_scores
+from data.features import convert_target_to_relevance_scores
 
 from evaluate import compute_accuracy
 from predict import random
 
 df_train = load_training_set()
 
-df_train = build_relevance_scores(df_train)
+df_train = convert_target_to_relevance_scores(df_train)
 
 losses = []
 for _ in tqdm(range(1000), desc="Evaluation"):

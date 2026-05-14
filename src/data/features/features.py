@@ -12,7 +12,7 @@ def compute_comp_rates(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def build_relevance_scores(df: pd.DataFrame) -> pd.DataFrame:
+def convert_target_to_relevance_scores(df: pd.DataFrame) -> pd.DataFrame:
     """
     Maps clicks and bookings to the Kaggle competition relevance scale.
     Assumes your training data has 'click_bool' and 'booking_bool' columns.
