@@ -1,5 +1,6 @@
 from .features.scale import scale_scores
 from .features.features import *
+from .features.date_time import add_date_features, build_checkin_dates, build_checkout_dates, add_weekend_proportion, build_binary_season
 import pandas as pd
 
 def process_competitor_variables(df: pd.DataFrame) -> pd.DataFrame:
@@ -88,44 +89,18 @@ def impute_missing_distances(df: pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-def add_weekend_proportion(df: pd.DataFrame) -> pd.DataFrame:
-    """ 
-    Calculates the proportion of the stay that falls on a weekend 
-    using fast numpy vectorization instead of row-by-row apply.
-    """
-    df = df.copy()
-    
-    # Ensure they are proper datetime types at the day resolution
-    checkin = df['checkin_date'].values.astype('datetime64[D]')
-    checkout = df['checkout_date'].values.astype('datetime64[D]')
-    
-    # 1. Calculate total stay length in days
-    total_days = (checkout - checkin).astype('timedelta64[D]').astype(int)
-    
-    # 2. Count the business days between the dates 
-    # (np.busday_count automatically uses a 'left' inclusive logic by default)
-    business_days = np.busday_count(checkin, checkout)
-    
-    # 3. Weekend days are just the difference
-    weekend_days = total_days - business_days
-    
-    # 4. Calculate proportion safely (avoiding divide-by-zero if someone booked 0 days)
-    df['weekend_proportion'] = np.where(
-        total_days > 0, 
-        weekend_days / total_days, 
-        0.0
-    )
-    
-    return df
-
 
 def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     """ Build new features from existing ones, for example by combining them or applying transformations."""
-    df['checkin_date'] = df['date_time'] + pd.to_timedelta(df['srch_booking_window'].squeeze(), unit='D') # type: ignore[arg-type]
-    df['checkout_date'] = df['checkin_date'] + pd.to_timedelta(df['srch_length_of_stay'].squeeze(), unit='D') # type: ignore[arg-type]
-    df = build_binary_season(name = 'off_season', df = df, start = 8, end = 11, ref='date_time')
-    df = build_prop_avg_price(df)
+    
+    # Build date features
+    df = build_checkin_dates(df)
+    df = build_checkout_dates(df)
     df = add_date_features(df)
+    df = add_weekend_proportion(df)
+    df = build_binary_season(name = 'off_season', df = df, start = 8, end = 11, ref='date_time')
+
+    df = build_prop_avg_price(df)
     df = add_travel_party_features(df)
     df = add_price_features(df)
     df = add_history_match_features(df)
@@ -133,7 +108,6 @@ def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df = add_query_relative_features(df)
     df = process_competitor_variables(df)
     df = add_distance_bucketization(df)
-    df = add_weekend_proportion(df)
 
     df['properties_per_query'] = df.groupby('srch_id')['prop_id'].transform('count')  
 

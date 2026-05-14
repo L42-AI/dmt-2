@@ -30,32 +30,6 @@ def build_relevance_scores(df: pd.DataFrame) -> pd.DataFrame:
     df.drop(columns=['click_bool', 'booking_bool', 'gross_bookings_usd', 'position'], inplace=True)
     return df
 
-def build_binary_season(name: str, df: pd.DataFrame, start: int, end: int, ref: str = 'date_time') -> pd.DataFrame:
-    """Build a boolean variable which flags whether a date-time of a query is within a specified
-    period. For example, if one can define a high-season, one can check whether the query 
-    happended within that season. The start and end boundaries are inclusive. 
-
-    Args:
-        name (string):      The name of the new variable
-        df (pd.DataFrame):  The dataframe to edit
-        start (int):        The starting month of the specified period
-        end (int):          The last month of the specified period
-        ref (string):       The variable to reference. For example query datetime, 
-                            or check-in date. 
-    """
-    df[name] = df[ref].dt.month.between(start, end) # .between is inclusuve !
-    return df
-
-def build_checkin_dates(df: pd.DataFrame) -> pd.DataFrame:
-    """ Builds a variable which determines the intended check-in date in a search query 
-    from 'date_time' and 'srch_booking_window'. 
-
-    Args:
-        df (pd.DataFrame)   : The dataframe to edit
-    """
-    df['checkin_date'] = df['date_time'] + pd.to_timedelta(df['srch_booking_window'].squeeze(), unit='D') # type: ignore[arg-type]
-    return df
-
 def build_flag_variable(name: str, df: pd.DataFrame, variable: str, value: float = 0.0) -> pd.DataFrame:
     """ Replaces specified values in variable with NA, and creates a new variable that 
     denotes when NA has occured for a hotel.
@@ -71,47 +45,12 @@ def build_flag_variable(name: str, df: pd.DataFrame, variable: str, value: float
     df[variable] = df[variable].replace(value, np.float64('nan'))
     return df
 
-def build_persona_one_hot_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    One-hot encode the parent and children persona variables
-    """
-    df['srch_adults_count'] = pd.Categorical(df['srch_adults_count'], categories=range(6))
-    df['srch_children_count'] = pd.Categorical(df['srch_children_count'], categories=range(5))
-
-    return pd.get_dummies(
-        df,
-        columns=['srch_adults_count', 'srch_children_count'],
-        prefix=['adults', 'children'],
-        dtype=int,
-    )
-
 def build_prop_avg_price(df: pd.DataFrame) -> pd.DataFrame:
     """
     Computes the average price per property and adds it as a new column.
     """
     df['prop_avg_price'] = df.groupby('prop_id')['price_usd'].transform('mean')
     return df
-
-def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Extract model-usable date features from date_time and checkin_date
-    """
-    df['search_month'] = df['date_time'].dt.month.astype('uint8') # Months are 1-12, so uint8 is sufficient
-    df['search_dayofweek'] = df['date_time'].dt.dayofweek.astype('uint8') # Monday=0, Sunday=6
-    df['search_hour'] = df['date_time'].dt.hour.astype('uint8') # 0-23, so uint8 is sufficient
-
-    if 'checkin_date' in df.columns:
-        df['checkin_month'] = df['checkin_date'].dt.month.astype('uint8') 
-        df['checkin_dayofweek'] = df['checkin_date'].dt.dayofweek.astype('uint8')
-        df['checkin_weekend'] = df['checkin_dayofweek'].isin([5, 6]).astype('uint8')
-
-    if 'checkout_date' in df.columns:
-        df['checkout_month'] = df['checkout_date'].dt.month.astype('uint8') 
-        df['checkout_dayofweek'] = df['checkout_date'].dt.dayofweek.astype('uint8')
-        df['checkout_weekend'] = df['checkout_dayofweek'].isin([5, 6]).astype('uint8')
-
-    return df
-
 
 def add_travel_party_features(df: pd.DataFrame) -> pd.DataFrame:
     """

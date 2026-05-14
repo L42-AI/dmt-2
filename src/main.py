@@ -11,10 +11,9 @@ parameters = {
         'n_estimators'      : 100
     }\
 }
-pipeline = Pipeline(parameters = parameters, sample_size = 1)
+pipeline = Pipeline(parameters = parameters, sample_size = .1)
 
 # Setup approaches and metrics (to be shown in logs)
-# approaches = ['ceiling', 'baseline', 'lambdamart', 'xgboost']
 approaches = ['baseline', 'content_knowledge', 'lambdamart', 'xgboost']
 metric_names = ['Training Accuracy', 'Validation Accuracy', 'Test Accuracy']
 
