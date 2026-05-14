@@ -8,6 +8,7 @@ NON_FEATURE_COLUMNS = {
     # datetime columns should be converted to numeric features first
     'date_time',
     'checkin_date',
+    'checkout_date',
 
     # target / leakage columns
     'relevance',

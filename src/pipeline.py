@@ -1,4 +1,7 @@
 from typing import Literal
+
+import pandas as pd
+
 from data import load_data
 from data import preprocess_data
 from data import train_val_split
@@ -52,9 +55,9 @@ class Pipeline:
             'xgboost': self._run_xgboost,
         }
 
-        return APPROACH_MAP[approach](self.train_set, self.val_set, self.test_set)
+        return APPROACH_MAP[approach](self.train_set.drop(columns=['date_time', 'checkin_date', 'checkout_date']), self.val_set.drop(columns=['date_time', 'checkin_date', 'checkout_date']), self.test_set.drop(columns=['date_time', 'checkin_date', 'checkout_date']))
 
-    def _run_predictions(self, train_set, val_set, test_set, predict_func, test_predict_func) -> tuple:
+    def _run_predictions(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame, predict_func, test_predict_func) -> tuple:
         train_predictions = predict_func(train_set)
         train_acc = compute_accuracy(train_predictions)
 
@@ -68,20 +71,20 @@ class Pipeline:
             train_acc, val_acc, None
         )
 
-    def _run_ceiling(self, train_set, val_set, test_set):
+    def _run_ceiling(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
         return self._run_predictions(train_set, val_set, test_set, predict_func=ceiling, test_predict_func=clear_predictions)
 
-    def _run_baseline(self, train_set, val_set, test_set):
+    def _run_baseline(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
         return self._run_predictions(train_set, val_set, test_set, predict_func=random, test_predict_func=random)
 
-    def _run_lambdamart(self, train_set, val_set, test_set):
+    def _run_lambdamart(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
         params = self.parameters['lambdamart']
         ranker = LambdaMARTRanker(num_leaves=params['num_leaves'], learning_rate=params['learning_rate'], n_estimators=params['n_estimators'])
         ranker.train(train_set, val_set)
 
         return self._run_predictions(train_set, val_set, test_set, predict_func=ranker.predict, test_predict_func=ranker.predict)
 
-    def _run_xgboost(self, train_set, val_set, test_set):
+    def _run_xgboost(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):        
         ranker = XGBoostRanker()
         ranker.train(train_set, val_set)
         return self._run_predictions(train_set, val_set, test_set, predict_func=ranker.predict, test_predict_func=ranker.predict)

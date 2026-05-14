@@ -105,6 +105,11 @@ def add_date_features(df: pd.DataFrame) -> pd.DataFrame:
         df['checkin_dayofweek'] = df['checkin_date'].dt.dayofweek.astype('uint8')
         df['checkin_weekend'] = df['checkin_dayofweek'].isin([5, 6]).astype('uint8')
 
+    if 'checkout_date' in df.columns:
+        df['checkout_month'] = df['checkout_date'].dt.month.astype('uint8') 
+        df['checkout_dayofweek'] = df['checkout_date'].dt.dayofweek.astype('uint8')
+        df['checkout_weekend'] = df['checkout_dayofweek'].isin([5, 6]).astype('uint8')
+
     return df
 
 
@@ -246,3 +251,20 @@ def add_query_relative_features(df: pd.DataFrame) -> pd.DataFrame:
         new_df = pd.DataFrame(new_cols, index=df.index)
         df = pd.concat([df, new_df], axis = 1)
     return df  
+
+def add_distance_bucketization(df: pd.DataFrame, num_buckets: int = 50) -> pd.DataFrame:
+    """
+    Buckets the continuous result into distinct quantiles.
+    """
+    # Always copy to avoid SettingWithCopy warnings in Pandas
+    df = df.copy()
+
+    # Create quantile-based buckets for the imputed distance, excluding the -1 values
+    df['distance_bucket'] = pd.qcut(
+        df['imputed_distance'],
+        q=num_buckets,
+        labels=False,
+        duplicates='drop'
+    )
+
+    return df
