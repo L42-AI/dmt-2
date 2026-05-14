@@ -2,9 +2,10 @@ import pandas as pd
 
 from .features.features import *
 from .features.date_time import add_date_features, build_checkin_dates, build_checkout_dates, add_weekend_proportion, build_binary_season
+from .features.competitors import process_competitor_variables
 
 from .scale import scale_scores
-from .impute import impute_missing_distances, process_competitor_variables
+from .impute import impute_missing_distances
 
 def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
     df['visitor_hist_starrating'] = df['visitor_hist_starrating'].where(df['visitor_hist_starrating'] >= 1.0)

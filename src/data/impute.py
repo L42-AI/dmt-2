@@ -18,25 +18,3 @@ def impute_missing_distances(df: pd.DataFrame) -> pd.DataFrame:
     df['distance_z_score'] = (df['imputed_distance'] - df.groupby('srch_id')['imputed_distance'].transform('mean')) / std
     
     return df
-
-def process_competitor_variables(df: pd.DataFrame) -> pd.DataFrame:
-    """ Process the competitor variables by removing negative values, and creating new variables to denote missingness."""
-    for i in range(1, 9):
-        rate_col = f'comp{i}_rate'
-        inv_col = f'comp{i}_inv'
-        diff_col = f'comp{i}_rate_percent_diff'
-
-        missing_col = f'comp{i}_missing'
-        has_better_price_col = f'comp{i}_has_better_price'
-        has_worse_price_col = f'comp{i}_has_worse_price'
-
-        df[missing_col] = (df[rate_col].isna() | df[inv_col].isna() | df[diff_col].isna()).astype('uint8')
-        df[has_better_price_col] = (df[rate_col] < 0.0).fillna(False).astype('uint8')
-        df[has_worse_price_col] = (df[rate_col] > 0.0).fillna(False).astype('uint8')
-
-        df[inv_col] = df[inv_col].where(df[missing_col] == 0, other=-1.0)
-        df[diff_col] = df[diff_col].where(df[missing_col] == 0, other=-1.0)
-
-        df.drop(columns=[rate_col], inplace=True)
-
-    return df
