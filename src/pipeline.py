@@ -11,6 +11,7 @@ from predict import (
     ceiling,
     LambdaMARTRanker,
     XGBoostRanker,
+    ContentKnowledgeRecommender
 )
 
 from evaluate import compute_accuracy
@@ -42,11 +43,12 @@ class Pipeline:
         self.val_set = clear_predictions(self._val_set_base)
         self.test_set = clear_predictions(self._test_set_base)
 
-    def run(self, approach: Literal['baseline', 'lambdamart', 'ceiling', 'xgboost']) -> tuple:
+    def run(self, approach: Literal['baseline', 'content_knowledge', 'lambdamart', 'ceiling', 'xgboost']) -> tuple:
         self.reset_data()
 
         APPROACH_MAP = {
             'baseline': self._run_baseline,
+            'content_knowledge': self._run_content_knowledge,   
             'lambdamart': self._run_lambdamart,
             'ceiling': self._run_ceiling,
             'xgboost': self._run_xgboost,
@@ -85,3 +87,15 @@ class Pipeline:
         ranker = XGBoostRanker()
         ranker.train(train_set, val_set)
         return self._run_predictions(train_set, val_set, test_set, predict_func=ranker.predict, test_predict_func=ranker.predict)
+
+    def _run_content_knowledge(self, train_set, val_set, test_set):
+        recommender = ContentKnowledgeRecommender()
+        recommender.train(train_set, val_set)
+
+        return self._run_predictions(
+        train_set,
+        val_set,
+        test_set,
+        predict_func=recommender.predict,
+        test_predict_func=recommender.predict,
+    )

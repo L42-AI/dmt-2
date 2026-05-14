@@ -14,7 +14,7 @@ pipeline = Pipeline(parameters = parameters, sample_size = 0.8)
 
 # Setup approaches and metrics (to be shown in logs)
 # approaches = ['ceiling', 'baseline', 'lambdamart', 'xgboost']
-approaches = ['lambdamart', 'xgboost']
+approaches = ['baseline', 'content_knowledge', 'lambdamart', 'xgboost']
 metric_names = ['Training Accuracy', 'Validation Accuracy', 'Test Accuracy']
 
 # Write header
