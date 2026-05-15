@@ -1,11 +1,16 @@
 import pandas as pd
 
-from .features.features import *
-from .features.date_time import add_date_features, build_checkin_dates, build_checkout_dates, add_weekend_proportion, build_binary_season
-from .features.competitors import process_competitor_variables
 
+from .split import train_val_split
 from .scale import scale_scores
-from .impute import impute_missing_distances
+
+from .features.ids import resample_ids
+from .features.distance import GraphDistanceImputer
+from .features.competitors import process_competitor_variables
+from .features.features import convert_target_to_relevance_scores
+from .features.date_time import add_date_features, build_checkin_dates, build_checkout_dates, add_weekend_proportion, build_binary_season
+
+from .features.features import *
 
 def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
     df['visitor_hist_starrating'] = df['visitor_hist_starrating'].where(df['visitor_hist_starrating'] >= 1.0)
@@ -48,8 +53,6 @@ def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
     df['orig_destination_distance'] = df['orig_destination_distance'].where(df['prop_log_historical_price'] > 0.0)
     df['orig_destination_distance_missing'] = df['orig_destination_distance'].isna().astype('uint8')
 
-    df = impute_missing_distances(df)
-
     return df
 
 def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -66,20 +69,38 @@ def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df = add_travel_party_features(df)
     df = add_price_features(df)
     df = add_history_match_features(df)
-    df = add_competitor_summary_features(df)
     df = add_query_relative_features(df)
     df = process_competitor_variables(df)
-    df = add_distance_bucketization(df)
 
     df['properties_per_query'] = df.groupby('srch_id')['prop_id'].transform('count')  
 
     df['is_domestic'] = (df['visitor_location_country_id'] == df['prop_country_id']).where(df['visitor_location_country_id'].notnull() & df['prop_country_id'].notnull(), 0).astype('uint8')
     return df
 
-def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
-    # 1. Clean, Impute and Scale existing features
-    df = _clean_impute_and_scale(df)
+def preprocess_data(train_set: pd.DataFrame, test_set: pd.DataFrame) -> tuple:
+
+    complete_set = pd.concat([train_set, test_set], ignore_index=True)
+    complete_set = resample_ids(complete_set)
+    train_set, test_set = complete_set.iloc[:len(train_set)], complete_set.iloc[len(train_set):]
+    del complete_set
+
+    train_set = convert_target_to_relevance_scores(train_set)
+
+    train_set, val_set = train_val_split(train_set, 0.8)
+
+    graph_imputer = GraphDistanceImputer()
+    graph_imputer.fit(train_set)
     
-    # 2. Build new features
-    df = _engineer_features(df)
-    return df
+    train_set = graph_imputer.transform(train_set)
+    val_set = graph_imputer.transform(val_set)
+    test_set = graph_imputer.transform(test_set)
+
+    train_set = _clean_impute_and_scale(train_set)
+    val_set = _clean_impute_and_scale(val_set)
+    test_set = _clean_impute_and_scale(test_set)
+    
+    train_set = _engineer_features(train_set)
+    val_set = _engineer_features(val_set)
+    test_set = _engineer_features(test_set)
+
+    return train_set, val_set, test_set

@@ -23,18 +23,12 @@ class Pipeline:
 
     TRAIN_RATIO = 0.8
 
-    
-
     def __init__(self, parameters: dict, sample_size: float = 1):
         self.parameters = parameters
 
         train_set, test_set = load_data(sample_size, random_state=42)
-        train_set = convert_target_to_relevance_scores(train_set)
-        train_set, val_set = train_val_split(train_set, self.TRAIN_RATIO)
 
-        self._train_set_base = preprocess_data(train_set)
-        self._val_set_base = preprocess_data(val_set)
-        self._test_set_base = preprocess_data(test_set)
+        self._train_set_base, self._val_set_base, self._test_set_base = preprocess_data(train_set, test_set)
 
         self.feature_cols = select_feature_columns(self._train_set_base)
 
