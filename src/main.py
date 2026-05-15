@@ -1,3 +1,5 @@
+import time
+
 from dotenv import load_dotenv
 load_dotenv()
 from pipeline import Pipeline
@@ -11,21 +13,36 @@ parameters = {
         'n_estimators'      : 100
     },
     'xgboost': {
-        'max_depth': 7,
-        'learning_rate': 0.035542238661166375,
-        'n_estimators': 800,
-        'subsample': 0.6024637141781495,
-        'colsample_bytree': 0.6952921993037987,
-        'min_child_weight': 22,
-        'gamma': 0.5,
-        'reg_lambda': 15.0
+        'max_depth'         : 7,
+        'learning_rate'     : 0.035542238661166375,
+        'n_estimators'      : 800,
+        'subsample'         : 0.6024637141781495,
+        'colsample_bytree'  : 0.6952921993037987,
+        'min_child_weight'  : 22,
+        'gamma'             : 0.5,
+        'reg_lambda'        : 15.0,
+        'reg_alpha'         : 0.0
+    },
+    'catboost': {
+        'iterations'        : 1500,
+        'learning_rate'     : 0.03,
+        'depth'             : 6,
+        'l2_leaf_reg'       : 3.0,
+        'cat_features': [
+            'prop_id', 
+            'srch_destination_id', 
+            'prop_country_id', 
+            'visitor_location_country_id'
+        ]
     }
 }
 
-pipeline = Pipeline(parameters = parameters, sample_size = .1)
+start_time = time.monotonic()
+pipeline = Pipeline(parameters = parameters, sample_size = .2)
 
 # Setup approaches and metrics (to be shown in logs)
-approaches = ['xgboost']
+approaches = ['xgboost', 'lambdamart', 'catboost', 'ensemble']
+approaches = ['ensemble']
 metric_names = ['Training Accuracy', 'Validation Accuracy', 'Test Accuracy']
 
 # Write header
@@ -46,3 +63,6 @@ for approach in approaches:
     metrics = [train_acc, val_acc, test_acc]
     record_metrics(approach, metrics)
 
+end_time = time.monotonic()
+elapsed_time = end_time - start_time
+print(f"Total execution time: {elapsed_time:.2f} seconds")
