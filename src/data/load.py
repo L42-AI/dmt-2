@@ -72,7 +72,7 @@ def load_training_set(
     csv_path = _competition_data_path(path) / 'training_set_VU_DM.csv'
     
     # 1. Always load the full cached dataset first
-    df = _get_or_create_parquet(csv_path, 'training_set_VU_DM', query_sample_proportion == 1.0)
+    df = _get_or_create_parquet(csv_path, 'training_set_VU_DM', query_sample_proportion == 1.0 or query_sample_proportion is None)
     
     # 2. Sample on the fly
     return _sample_queries(df, query_sample_proportion, random_state)
@@ -86,7 +86,7 @@ def load_test_set(
     csv_path = _competition_data_path(path) / 'test_set_VU_DM.csv'
     
     # 1. Always load the full cached dataset first
-    df = _get_or_create_parquet(csv_path, 'test_set_VU_DM', query_sample_proportion == 1.0)
+    df = _get_or_create_parquet(csv_path, 'test_set_VU_DM', query_sample_proportion == 1.0 or query_sample_proportion is None)
     
     # 2. Sample on the fly
     return _sample_queries(df, query_sample_proportion, random_state)
