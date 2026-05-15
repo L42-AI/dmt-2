@@ -95,7 +95,9 @@ class Pipeline:
             n_estimators=params['n_estimators'],
             subsample=params['subsample'],
             colsample_bytree=params['colsample_bytree'],
-            min_child_weight=params['min_child_weight']
+            min_child_weight=params['min_child_weight'],
+            gamma=params['gamma'],
+            reg_lambda=params['reg_lambda'],
         )
 
         ranker = XGBoostRanker(max_depth=params['max_depth'], learning_rate=params['learning_rate'], n_estimators=params['n_estimators'])

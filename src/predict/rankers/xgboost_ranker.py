@@ -17,6 +17,8 @@ class XGBoostRanker(RankDataProcessor):
         subsample: float = 1.0,           
         colsample_bytree: float = 1.0,    
         min_child_weight: int = 1,        
+        gamma: float = 0.0,            
+        reg_lambda: float = 1.0,       
         random_state: int = 42,
     ):
         super().__init__()
@@ -26,6 +28,8 @@ class XGBoostRanker(RankDataProcessor):
         self.subsample = subsample
         self.colsample_bytree = colsample_bytree
         self.min_child_weight = min_child_weight
+        self.gamma = gamma             
+        self.reg_lambda = reg_lambda   
         self.random_state = random_state
 
     def train(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None) -> None:
@@ -43,6 +47,8 @@ class XGBoostRanker(RankDataProcessor):
             subsample=self.subsample,
             colsample_bytree=self.colsample_bytree,
             min_child_weight=self.min_child_weight,
+            gamma=self.gamma,               
+            reg_lambda=self.reg_lambda,     
             random_state=self.random_state,
             tree_method='hist',
             eval_metric='ndcg@5',

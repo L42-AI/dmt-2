@@ -17,6 +17,8 @@ parameters = {
         'subsample': 0.6024637141781495,
         'colsample_bytree': 0.6952921993037987,
         'min_child_weight': 22,
+        'gamma': 0.5,
+        'reg_lambda': 15.0
     }
 }
 
