@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "catboost>=1.2.10",
+    "flaml>=2.6.0",
     "ipykernel>=7.2.0",
     "jupyter>=1.1.1",
     "kaggle>=2.1.2",
