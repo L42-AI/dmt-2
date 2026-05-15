@@ -28,7 +28,7 @@ class CatBoostRanker:
             depth=self.depth,
             l2_leaf_reg=self.l2_leaf_reg,
             loss_function='YetiRank', # Natively optimizes for NDCG
-            eval_metric='NDCG',
+            eval_metric='NDCG:top=5',
             random_seed=42,
             verbose=100
         )
