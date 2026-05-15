@@ -14,20 +14,31 @@ from .features.features import *
 
 def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
     df['visitor_hist_starrating'] = df['visitor_hist_starrating'].where(df['visitor_hist_starrating'] >= 1.0)
-    df['visitor_hist_starrating'] = scale_scores(df, 'visitor_hist_starrating')
     df['visitor_hist_starrating_missing'] = df['visitor_hist_starrating'].isna().astype('uint8')
 
     df['visitor_hist_adr_usd'] = df['visitor_hist_adr_usd'].where(df['visitor_hist_adr_usd'] > 0.0)
     df['visitor_hist_adr_usd_missing'] = df['visitor_hist_adr_usd'].isna().astype('uint8')
     
     df['prop_starrating'] = df['prop_starrating'].where(df['prop_starrating'] >= 1.0)
-    df['prop_starrating'] = scale_scores(df, 'prop_starrating')
     df['prop_starrating_missing'] = df['prop_starrating'].isna().astype('uint8')
 
     df['prop_review_score_no_prior_reviews'] = df['prop_review_score'].where(df['prop_review_score'] == 0.0).notna().astype('uint8')
     df['prop_review_score'] = df['prop_review_score'].where(df['prop_review_score'] >= 1.0)
     df['prop_review_score'] = scale_scores(df, 'prop_review_score')
     df['prop_review_score_missing'] = (df['prop_review_score'].isna() & df['prop_review_score_no_prior_reviews'] == 0).astype('uint8')
+
+    # Convert to cents
+    df['price_usd'] = (df['price_usd'] * 100).round().astype('int32')
+
+    # Impute missing star history with the median STAR RATING of the destination
+    dest_star_median = df.groupby('srch_destination_id')['prop_starrating'].transform('median')
+    df['visitor_hist_starrating'] = df['visitor_hist_starrating'].fillna(dest_star_median)
+    df['visitor_hist_starrating'] = scale_scores(df, 'visitor_hist_starrating') # Scale AFTER filling
+    df['prop_starrating'] = scale_scores(df, 'prop_starrating') # Scale AFTER filling
+
+    # Impute missing ADR (budget) with the median HOTEL PRICE of the destination
+    dest_price_median = df.groupby('srch_destination_id')['price_usd'].transform('median')
+    df['visitor_hist_adr_usd'] = df['visitor_hist_adr_usd'].fillna(dest_price_median)
 
     # TODO: Scaling
     df['prop_location_score1'] = df['prop_location_score1'].where(df['prop_location_score1'] > 0.0)
@@ -46,9 +57,6 @@ def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
     # TODO: Scaling
     df['prop_log_historical_price'] = df['prop_log_historical_price'].where(df['prop_log_historical_price'] > 0.0)
     df['prop_log_historical_price_missing'] = df['prop_log_historical_price'].isna().astype('uint8')
-
-    # Convert to cents
-    df['price_usd'] = (df['price_usd'] * 100).round().astype('int32')
 
     # TODO: srch_query_affinity_score
     df['srch_query_affinity_score'] = df['srch_query_affinity_score'].apply(lambda x : np.exp(x) if x is not pd.NA else x)
