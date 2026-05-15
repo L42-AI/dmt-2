@@ -93,7 +93,18 @@ class Pipeline:
         )
 
     def _run_xgboost(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):        
-        ranker = XGBoostRanker()
+        params = self.parameters['xgboost']
+
+        ranker = XGBoostRanker(
+            max_depth=params['max_depth'],
+            learning_rate=params['learning_rate'],
+            n_estimators=params['n_estimators'],
+            subsample=params['subsample'],
+            colsample_bytree=params['colsample_bytree'],
+            min_child_weight=params['min_child_weight']
+        )
+
+        ranker = XGBoostRanker(max_depth=params['max_depth'], learning_rate=params['learning_rate'], n_estimators=params['n_estimators'])
         ranker.train(train_set, val_set)
         return self._run_predictions(
             train_set,

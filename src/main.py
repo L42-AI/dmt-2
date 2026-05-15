@@ -9,7 +9,15 @@ parameters = {
         'num_leaves'        : 31,
         'learning_rate'     : 0.1,
         'n_estimators'      : 100
-    }\
+    },
+    'xgboost': {
+        'max_depth': 7,
+        'learning_rate': 0.035542238661166375,
+        'n_estimators': 800,
+        'subsample': 0.6024637141781495,
+        'colsample_bytree': 0.6952921993037987,
+        'min_child_weight': 22,
+    }
 }
 pipeline = Pipeline(parameters = parameters, sample_size = .1)
 

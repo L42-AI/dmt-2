@@ -12,6 +12,7 @@ dependencies = [
     "lightgbm>=4.6.0",
     "matplotlib>=3.10.9",
     "numba>=0.65.1",
+    "optuna>=4.8.0",
     "pandas>=3.0.2",
     "pyarrow>=24.0.0",
     "python-dotenv>=1.2.2",
