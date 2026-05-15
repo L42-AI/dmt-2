@@ -19,10 +19,11 @@ parameters = {
         'min_child_weight': 22,
     }
 }
+
 pipeline = Pipeline(parameters = parameters, sample_size = .1)
 
 # Setup approaches and metrics (to be shown in logs)
-approaches = ['baseline', 'content_knowledge', 'lambdamart', 'xgboost']
+approaches = ['xgboost']
 metric_names = ['Training Accuracy', 'Validation Accuracy', 'Test Accuracy']
 
 # Write header
