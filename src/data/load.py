@@ -41,7 +41,7 @@ def _sample_queries(
     return df[df['srch_id'].isin(sampled_queries)]
 
 
-def _get_or_create_parquet(csv_path: Path, filename: str) -> pd.DataFrame:
+def _get_or_create_parquet(csv_path: Path, filename: str, eligible_for_export: bool) -> pd.DataFrame:
     """
     Checks for a local Parquet version of the FULL dataset. 
     If missing, reads the CSV, parses dates FAST, and saves the Parquet for next time.
@@ -53,14 +53,15 @@ def _get_or_create_parquet(csv_path: Path, filename: str) -> pd.DataFrame:
     
     df = pd.read_csv(csv_path, engine='pyarrow')
     df['date_time'] = pd.to_datetime(df['date_time'], format='%Y-%m-%d %H:%M:%S')
-    df.to_parquet(parquet_path, engine='pyarrow', index=False)
+    if eligible_for_export:
+        df.to_parquet(parquet_path, engine='pyarrow', index=False)
     
     return df
 
 
 def load_submission_sample(path: Path | str | None = None) -> pd.DataFrame:
     csv_path = _competition_data_path(path) / 'submission_sample.csv'
-    return _get_or_create_parquet(csv_path, 'submission_sample')
+    return _get_or_create_parquet(csv_path, 'submission_sample', True)
 
 
 def load_training_set(
@@ -71,7 +72,7 @@ def load_training_set(
     csv_path = _competition_data_path(path) / 'training_set_VU_DM.csv'
     
     # 1. Always load the full cached dataset first
-    df = _get_or_create_parquet(csv_path, 'training_set_VU_DM')
+    df = _get_or_create_parquet(csv_path, 'training_set_VU_DM', query_sample_proportion == 1.0)
     
     # 2. Sample on the fly
     return _sample_queries(df, query_sample_proportion, random_state)
@@ -85,7 +86,7 @@ def load_test_set(
     csv_path = _competition_data_path(path) / 'test_set_VU_DM.csv'
     
     # 1. Always load the full cached dataset first
-    df = _get_or_create_parquet(csv_path, 'test_set_VU_DM')
+    df = _get_or_create_parquet(csv_path, 'test_set_VU_DM', query_sample_proportion == 1.0)
     
     # 2. Sample on the fly
     return _sample_queries(df, query_sample_proportion, random_state)
