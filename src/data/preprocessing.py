@@ -37,6 +37,12 @@ def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
     df['prop_location_score2'] = df['prop_location_score2'].where(df['prop_location_score2'] > 0.0)
     df['prop_location_score2_missing'] = df['prop_location_score2'].isna().astype('uint8')
 
+    df['location_score_interaction'] = df['prop_location_score1'] * df['prop_location_score2']
+    df['location_score_interaction_missing'] = df['location_score_interaction'].isna().astype('uint8')
+
+    normalized_score1 = df['prop_location_score1'] / df['prop_location_score1'].max()
+    df['location_disagreement'] = df['prop_location_score2'] - normalized_score1
+
     # TODO: Scaling
     df['prop_log_historical_price'] = df['prop_log_historical_price'].where(df['prop_log_historical_price'] > 0.0)
     df['prop_log_historical_price_missing'] = df['prop_log_historical_price'].isna().astype('uint8')
@@ -46,11 +52,11 @@ def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
 
     # TODO: srch_query_affinity_score
     df['srch_query_affinity_score'] = df['srch_query_affinity_score'].apply(lambda x : np.exp(x) if x is not pd.NA else x)
-    df['srch_query_affinity_score'] = df['srch_query_affinity_score'].where(df['prop_log_historical_price'] < 0.0)
+    df['srch_query_affinity_score'] = df['srch_query_affinity_score'].where(df['srch_query_affinity_score'] >= 0.0)
     df['srch_query_affinity_score_missing'] = df['srch_query_affinity_score'].isna().astype('uint8')
     
     # TODO: orig_destination_distance
-    df['orig_destination_distance'] = df['orig_destination_distance'].where(df['prop_log_historical_price'] > 0.0)
+    df['orig_destination_distance'] = df['orig_destination_distance'].where(df['orig_destination_distance'] > 0.0)
     df['orig_destination_distance_missing'] = df['orig_destination_distance'].isna().astype('uint8')
 
     return df
