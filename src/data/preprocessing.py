@@ -91,7 +91,7 @@ def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df['is_domestic'] = (df['visitor_location_country_id'] == df['prop_country_id']).where(df['visitor_location_country_id'].notnull() & df['prop_country_id'].notnull(), 0).astype('uint8')
     return df
 
-def preprocess_data(train_set: pd.DataFrame, test_set: pd.DataFrame) -> tuple:
+def preprocess_data(train_set: pd.DataFrame, test_set: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
     complete_set = pd.concat([train_set, test_set], ignore_index=True)
     complete_set = resample_ids(complete_set)
