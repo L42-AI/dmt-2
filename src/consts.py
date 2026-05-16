@@ -1,3 +1,34 @@
 from pathlib import Path
 
 SRC_DIR = Path(__file__).parent
+
+PARAMS = {
+    'lambdamart': {
+        "log_max_bin": 7,
+        "n_estimators": 639,
+        "num_leaves": 225,
+        "min_child_samples": 2,
+        "learning_rate": 0.059024870262997915,
+        "colsample_bytree": 0.8392520450895368,
+        "reg_alpha": 0.09130717779270929,
+        "reg_lambda": 1000.0,
+        "max_depth": 9,
+        "subsample": 0.8243444512755314,
+        "min_gain_to_split": 0.02230882376865448
+    },
+    'xgboost': {
+        'n_estimators': 2052,
+        'max_leaves': 511,
+        'min_child_weight': 24.554806906208903,
+        'learning_rate': 0.02058763133924334,
+        'subsample': 0.991983283208459,
+        'colsample_bylevel': 1.0,
+        'colsample_bytree': 0.4362147460980912,
+        'reg_alpha': 0.0019118378194259021,
+        'reg_lambda': 427.7164551309011,
+    },
+    'ensemble_weights': {
+        'xgb': 0.65,
+        'lgbm': 0.35
+    }
+}

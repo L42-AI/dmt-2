@@ -4,7 +4,7 @@ from flaml import AutoML, tune
 
 from data import load_data, preprocess_data
 
-def exhaustive_multi_tune_with_flaml(sample_size: float = 0.5, total_time_budget: int = 7200):
+def exhaustive_multi_tune_with_flaml(sample_size: float = 1, total_time_budget: int = 18000):
     models = ["lgbm", "xgboost"]
     time_per_model = total_time_budget // len(models)
     
@@ -101,4 +101,4 @@ def exhaustive_multi_tune_with_flaml(sample_size: float = 0.5, total_time_budget
 
 if __name__ == "__main__":
     # 7200 seconds total = 1 hour for LightGBM, 1 hour for XGBoost
-    exhaustive_multi_tune_with_flaml(sample_size=0.5, total_time_budget=7200)
+    exhaustive_multi_tune_with_flaml(sample_size=1, total_time_budget=3600 * 5)

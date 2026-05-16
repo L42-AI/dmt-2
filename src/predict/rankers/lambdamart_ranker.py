@@ -53,6 +53,7 @@ class LambdaMARTRanker(RankDataProcessor):
             "subsample": self.parameters.get('subsample'),
             "colsample_bytree": self.parameters.get('colsample_bytree'),
             "min_gain_to_split": self.parameters.get('min_gain_to_split'),
+            'log_max_bin': self.parameters.get('log_max_bin'),
             "reg_alpha": self.parameters.get('reg_alpha'),
             "reg_lambda": self.parameters.get('reg_lambda'),
             
@@ -64,8 +65,7 @@ class LambdaMARTRanker(RankDataProcessor):
             params,
             train_data,
             num_boost_round=self.parameters.get('n_estimators'),
-            valid_sets=[valid_data] if valid_data is not None else None,
-            callbacks=[lgb.early_stopping(10)] if valid_data is not None else None
+            valid_sets=[valid_data] if valid_data is not None else None
         )
 
         print(f"LambdaMART training complete. Trained on {len(train_df)} samples across {len(group_train)} queries.")

@@ -119,7 +119,7 @@ class Pipeline:
         )
 
     def _run_ensemble(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
-        print("\n=== Initializing Elite Ensemble (XGB + LGBM + CatBoost) ===")
+        print("\n=== Initializing Elite Ensemble (XGB + LGBM) ===")
         
         # 1. Define your Ensemble Weights
         # These should sum to 1.0. You will tune these later based on validation scores!
