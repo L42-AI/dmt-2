@@ -42,7 +42,7 @@ class Pipeline:
         self.val_set = clear_predictions(self._val_set_base)
         self.test_set = clear_predictions(self._test_set_base)
 
-    def run(self, approach: Literal['baseline', 'content_knowledge', 'lambdamart', 'ceiling', 'xgboost', 'catboost', 'ensemble']) -> tuple:
+    def run(self, approach: Literal['baseline', 'content_knowledge', 'lambdamart', 'ceiling', 'xgboost', 'ensemble']) -> tuple:
         self.reset_data()
 
         APPROACH_MAP = {
@@ -51,7 +51,6 @@ class Pipeline:
             'lambdamart': self._run_lambdamart,
             'ceiling': self._run_ceiling,
             'xgboost': self._run_xgboost,
-            'catboost': self._run_catboost,
             'ensemble': self._run_ensemble
         }
 
@@ -83,7 +82,7 @@ class Pipeline:
 
     def _run_lambdamart(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
         params = self.parameters['lambdamart']
-        ranker = LambdaMARTRanker(num_leaves=params['num_leaves'], learning_rate=params['learning_rate'], n_estimators=params['n_estimators'])
+        ranker = LambdaMARTRanker(parameters=params)
         ranker.train(train_set, val_set)
 
         return self._run_predictions(
@@ -97,17 +96,7 @@ class Pipeline:
     def _run_xgboost(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):        
         params = self.parameters['xgboost']
 
-        ranker = XGBoostRanker(
-            max_depth=params['max_depth'],
-            learning_rate=params['learning_rate'],
-            n_estimators=params['n_estimators'],
-            subsample=params['subsample'],
-            colsample_bytree=params['colsample_bytree'],
-            min_child_weight=params['min_child_weight'],
-            gamma=params['gamma'],
-            reg_lambda=params['reg_lambda'],
-            reg_alpha=params['reg_alpha']
-        )
+        ranker = XGBoostRanker(parameters=params)
 
         ranker.train(train_set, val_set)
         return self._run_predictions(
@@ -129,55 +118,27 @@ class Pipeline:
             predict_func=recommender.predict,
             test_predict_func=recommender.predict,
         )
-    
-    def _run_catboost(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
-        params = self.parameters['catboost']
-
-        ranker = CatBoostRanker(
-            iterations=params['iterations'],
-            learning_rate=params['learning_rate'],
-            depth=params['depth'],
-            l2_leaf_reg=params['l2_leaf_reg'],
-        )
-
-        ranker.train(train_set, val_set)
-        return self._run_predictions(
-            train_set,
-            val_set,
-            test_set,
-            predict_func=ranker.predict,
-            test_predict_func=ranker.predict
-        )
 
     def _run_ensemble(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
         print("\n=== Initializing Elite Ensemble (XGB + LGBM + CatBoost) ===")
         
         # 1. Define your Ensemble Weights
         # These should sum to 1.0. You will tune these later based on validation scores!
-        weights = {
-            'xgb': 0.45,
-            'lgbm': 0.35,
-            'cat': 0.20
-        }
+        weights = self.parameters['ensemble_weights']
 
         # 2. Initialize All Three Models (Assuming CatBoostRanker is added to predict.py)
         xgb_params = self.parameters.get('xgboost', {})
         lgbm_params = self.parameters.get('lambdamart', {})
-        cat_params = self.parameters.get('catboost', {}) # Add this to your parameters dict
 
-        xgb_ranker = XGBoostRanker(**xgb_params)
-        lgbm_ranker = LambdaMARTRanker(**lgbm_params)
-        cat_ranker = CatBoostRanker(**cat_params) # You will need to implement this class
+        xgb_ranker = XGBoostRanker(parameters=xgb_params)
+        lgbm_ranker = LambdaMARTRanker(parameters=lgbm_params)
 
         # 3. Train independently
-        print(f"[1/3] Training XGBoost (Weight: {weights['xgb']})...")
+        print(f"[1/2] Training XGBoost (Weight: {weights['xgb']})...")
         xgb_ranker.train(train_set, val_set)
         
-        print(f"[2/3] Training LightGBM (Weight: {weights['lgbm']})...")
+        print(f"[2/2] Training LightGBM (Weight: {weights['lgbm']})...")
         lgbm_ranker.train(train_set, val_set)
-
-        print(f"[3/3] Training CatBoost (Weight: {weights['cat']})...")
-        cat_ranker.train(train_set, val_set)
 
         # 4. The Weighted RRF Prediction Function
         def ensemble_predict(df: pd.DataFrame):
@@ -186,19 +147,16 @@ class Pipeline:
             # Extract predictions and rename columns safely
             xgb_ranks = xgb_ranker.predict(df)[['srch_id', 'prop_id', 'position']].rename(columns={'position': 'xgb_pos'})
             lgbm_ranks = lgbm_ranker.predict(df)[['srch_id', 'prop_id', 'position']].rename(columns={'position': 'lgbm_pos'})
-            cat_ranks = cat_ranker.predict(df)[['srch_id', 'prop_id', 'position']].rename(columns={'position': 'cat_pos'})
             
             # Merge all three onto the master dataframe
             df_out = df_out.merge(xgb_ranks, on=['srch_id', 'prop_id'], how='left')
             df_out = df_out.merge(lgbm_ranks, on=['srch_id', 'prop_id'], how='left')
-            df_out = df_out.merge(cat_ranks, on=['srch_id', 'prop_id'], how='left')
             
             # Calculate the Weighted Reciprocal Rank Fusion Score (k=60 is standard)
             k = 60
             df_out['rrf_score'] = (
                 (weights['xgb'] * (1.0 / (k + df_out['xgb_pos']))) +
-                (weights['lgbm'] * (1.0 / (k + df_out['lgbm_pos']))) +
-                (weights['cat'] * (1.0 / (k + df_out['cat_pos'])))
+                (weights['lgbm'] * (1.0 / (k + df_out['lgbm_pos'])))
             )
             
             # Re-rank based on the final weighted score (Higher score = Better rank)
@@ -209,7 +167,7 @@ class Pipeline:
             
             # Sort and clean up
             df_out = df_out.sort_values(by=['srch_id', 'position']).reset_index(drop=True)
-            df_out = df_out.drop(columns=['xgb_pos', 'lgbm_pos', 'cat_pos', 'rrf_score'])
+            df_out = df_out.drop(columns=['xgb_pos', 'lgbm_pos', 'rrf_score'])
             
             return df_out
 
