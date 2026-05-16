@@ -81,19 +81,7 @@ class Pipeline:
         params = self.parameters['lambdamart']
         ranker = LambdaMARTRanker(
             params = params
-            # num_leaves=params.get('num_leaves', 31),
-            # learning_rate=params.get('learning_rate', 0.1),
-            # n_estimators=params.get('n_estimators', 100),
         )
-        # set extended params if present
-        # ranker.max_depth = params.get('max_depth', ranker.max_depth)
-        # ranker.min_data_in_leaf = params.get('min_data_in_leaf', ranker.min_data_in_leaf)
-        # ranker.feature_fraction = params.get('feature_fraction', ranker.feature_fraction)
-        # ranker.bagging_fraction = params.get('bagging_fraction', ranker.bagging_fraction)
-        # ranker.bagging_freq = params.get('bagging_freq', ranker.bagging_freq)
-        # ranker.lambda_l2 = params.get('lambda_l2', ranker.lambda_l2)
-        # ranker.min_gain_to_split = params.get('min_gain_to_split', ranker.min_gain_to_split)
-
         ranker.train(train_set, val_set, feature_list=self.feature_cols)
         
         # See feature importance of training evaluation (not validation!)
