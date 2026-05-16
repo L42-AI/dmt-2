@@ -11,27 +11,11 @@ class XGBoostRanker(RankDataProcessor):
 
     def __init__(
         self,
-        n_estimators: int = 300,
-        learning_rate: float = 0.05,
-        max_depth: int = 6,
-        subsample: float = 1.0,           
-        colsample_bytree: float = 1.0,    
-        min_child_weight: int = 1,        
-        gamma: float = 0.0,            
-        reg_lambda: float = 1.0,      
-        reg_alpha: float = 0.0, 
+        parameters: dict,
         random_state: int = 42,
     ):
         super().__init__()
-        self.n_estimators = n_estimators
-        self.learning_rate = learning_rate
-        self.max_depth = max_depth
-        self.subsample = subsample
-        self.colsample_bytree = colsample_bytree
-        self.min_child_weight = min_child_weight
-        self.gamma = gamma             
-        self.reg_lambda = reg_lambda   
-        self.reg_alpha = reg_alpha     
+        self.parameters = parameters  
         self.random_state = random_state
 
     def train(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None) -> None:
@@ -43,18 +27,23 @@ class XGBoostRanker(RankDataProcessor):
 
         self.model = XGBRanker(
             objective='rank:ndcg',
-            n_estimators=self.n_estimators,
-            learning_rate=self.learning_rate,
-            max_depth=self.max_depth,
-            subsample=self.subsample,
-            colsample_bytree=self.colsample_bytree,
-            min_child_weight=self.min_child_weight,
-            gamma=self.gamma,               
-            reg_lambda=self.reg_lambda,     
-            reg_alpha=self.reg_alpha,
-            random_state=self.random_state,
             tree_method='hist',
             eval_metric='ndcg@5',
+            grow_policy='lossguide',
+
+            n_estimators=self.parameters.get('n_estimators'),
+            max_leaves=self.parameters.get('max_leaves'),
+            max_depth=self.parameters.get('max_depth'),
+            min_child_weight=self.parameters.get('min_child_weight'),
+            learning_rate=self.parameters.get('learning_rate'),
+            subsample=self.parameters.get('subsample'),
+            colsample_bytree=self.parameters.get('colsample_bytree'),
+            colsample_bylevel=self.parameters.get('colsample_bylevel'),
+            gamma=self.parameters.get('gamma'),
+            reg_lambda=self.parameters.get('reg_lambda'),
+            reg_alpha=self.parameters.get('reg_alpha'),
+            
+            random_state=self.random_state,
         )
 
         self.model.fit(

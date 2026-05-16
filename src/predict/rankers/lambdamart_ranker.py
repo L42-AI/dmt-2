@@ -11,14 +11,12 @@ class LambdaMARTRanker(RankDataProcessor):
 
     def __init__(
         self,
-        num_leaves: int = 31,
-        learning_rate: float = 0.1,
-        n_estimators: int = 100
+        parameters: dict,
+        random_state: int = 42,
     ):
         super().__init__()
-        self.num_leaves = num_leaves
-        self.learning_rate = learning_rate
-        self.n_estimators = n_estimators
+        self.parameters = parameters
+        self.random_state = random_state
         
     def train(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None) -> None:
         """Train the LambdaMART model.
@@ -47,15 +45,25 @@ class LambdaMARTRanker(RankDataProcessor):
         params = {
             'objective': 'rank_xendcg',
             'metric': 'ndcg',
-            'num_leaves': self.num_leaves,
-            'learning_rate': self.learning_rate,
+            'eval_at': [5],
+            'num_leaves': self.parameters.get('num_leaves'),
+            'max_depth': self.parameters.get('max_depth'),
+            'min_child_samples': self.parameters.get('min_child_samples'),
+            "learning_rate": self.parameters.get('learning_rate'),
+            "subsample": self.parameters.get('subsample'),
+            "colsample_bytree": self.parameters.get('colsample_bytree'),
+            "min_gain_to_split": self.parameters.get('min_gain_to_split'),
+            "reg_alpha": self.parameters.get('reg_alpha'),
+            "reg_lambda": self.parameters.get('reg_lambda'),
+            
+            'random_state': self.random_state,
             'verbose': -1,
         }
 
         self.model = lgb.train(
             params,
             train_data,
-            num_boost_round=self.n_estimators,
+            num_boost_round=self.parameters.get('n_estimators'),
             valid_sets=[valid_data] if valid_data is not None else None,
             callbacks=[lgb.early_stopping(10)] if valid_data is not None else None
         )

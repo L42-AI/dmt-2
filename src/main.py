@@ -13,27 +13,28 @@ parameters = {
         'n_estimators'      : 100
     },
     'xgboost': {
-        'max_depth'         : 7,
-        'learning_rate'     : 0.035542238661166375,
-        'n_estimators'      : 800,
-        'subsample'         : 0.6024637141781495,
-        'colsample_bytree'  : 0.6952921993037987,
-        'min_child_weight'  : 22,
-        'gamma'             : 0.5,
-        'reg_lambda'        : 15.0,
-        'reg_alpha'         : 0.0
+        # 'max_depth'         : 7,
+        # 'learning_rate'     : 0.035542238661166375,
+        # 'n_estimators'      : 800,
+        # 'subsample'         : 0.6024637141781495,
+        # 'colsample_bytree'  : 0.6952921993037987,
+        # 'min_child_weight'  : 22,
+        # 'gamma'             : 0.5,
+        # 'reg_lambda'        : 15.0,
+        # 'reg_alpha'         : 0.0
+        'n_estimators': 2052,
+        'max_leaves': 511,
+        'min_child_weight': 24.554806906208903,
+        'learning_rate': 0.02058763133924334,
+        'subsample': 0.991983283208459,
+        'colsample_bylevel': 1.0,
+        'colsample_bytree': 0.4362147460980912,
+        'reg_alpha': 0.0019118378194259021,
+        'reg_lambda': 427.7164551309011,
     },
-    'catboost': {
-        'iterations'        : 1500,
-        'learning_rate'     : 0.03,
-        'depth'             : 6,
-        'l2_leaf_reg'       : 3.0,
-        'cat_features': [
-            'prop_id', 
-            'srch_destination_id', 
-            'prop_country_id', 
-            'visitor_location_country_id'
-        ]
+    'ensemble_weights': {
+        'xgb': 0.65,
+        'lgbm': 0.35
     }
 }
 
@@ -41,10 +42,9 @@ start_time = time.monotonic()
 pipeline = Pipeline(parameters = parameters, sample_size = .2)
 
 # Setup approaches and metrics (to be shown in logs)
-approaches = ['xgboost', 'lambdamart', 'catboost', 'ensemble']
-approaches = ['ensemble']
-metric_names = ['Training Accuracy', 'Validation Accuracy', 'Test Accuracy']
-
+approaches = ['xgboost', 'lambdamart', 'ensemble']
+# approaches = ['ensemble']
+metric_names = ['Train NDCG@5', 'Validation NDCG@5', 'Test NDCG@5']
 # Write header
 init_log(metric_names)
 
@@ -54,9 +54,10 @@ for approach in approaches:
 
     # Terminal Output
     print(f'=== {approach} ===')
-    print(f"Train Accuracy: {train_acc}")
-    print(f"Validation Accuracy: {val_acc}")
-    print(f"Test Accuracy: {test_acc}")
+    print(f"Train NDCG@5:      {train_acc:.5f}")
+    print(f"Validation NDCG@5: {val_acc:.5f}")
+    if test_acc is not None:
+        print(f"Test NDCG@5:       {test_acc:.5f}")
     print('\n')
 
     # Record metrics
