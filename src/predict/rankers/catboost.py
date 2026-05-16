@@ -32,6 +32,7 @@ class CatBoostRanker:
             random_seed=42,
             verbose=100
         )
+        self.feature_names = None
 
     def _prepare_pool(self, df: pd.DataFrame, is_train: bool = True) -> Pool:
         """Prepares the CatBoost Pool object and safely formats categorical columns."""
@@ -50,8 +51,13 @@ class CatBoostRanker:
 
         # Extract components
         group_id = df_clean['srch_id']
-        features = df_clean.drop(columns=['srch_id', 'relevance', 'position', 'click_bool', 'booking_bool'], errors='ignore')
-        
+
+        # If feature_names provided, use them; otherwise drop known non-features
+        if self.feature_names is not None:
+            features = df_clean[self.feature_names].copy()
+        else:
+            features = df_clean.drop(columns=['srch_id', 'relevance', 'position', 'click_bool', 'booking_bool'], errors='ignore')
+
         target = df_clean['relevance'] if is_train else None
 
         return Pool(
@@ -62,7 +68,13 @@ class CatBoostRanker:
         )
 
     def train(self, train_set: pd.DataFrame, val_set: pd.DataFrame) -> None:
+        def _ensure_feature_names():
+            # If feature_names not set, infer from train_set by excluding known metadata
+            if self.feature_names is None:
+                self.feature_names = [c for c in train_set.select_dtypes(include=['number', 'bool']).columns if c not in ['srch_id', 'relevance', 'position']]
+
         print("\n--- Preparing CatBoost Data Pools ---")
+        _ensure_feature_names()
         train_pool = self._prepare_pool(train_set, is_train=True)
         val_pool = self._prepare_pool(val_set, is_train=True)
 
@@ -76,6 +88,7 @@ class CatBoostRanker:
 
     def predict(self, df: pd.DataFrame) -> pd.DataFrame:
         df_out = df.copy()
+        # Ensure we select same features as training
         pred_pool = self._prepare_pool(df, is_train=False)
         
         # Get raw continuous predictions

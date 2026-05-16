@@ -81,7 +81,15 @@ def tune_lambdamart(trial, sample_size):
     lgbm_params = {
         'num_leaves': trial.suggest_int('num_leaves', 15, 63),
         'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.1, log=True),
-        'n_estimators': trial.suggest_int('n_estimators', 200, 1000, step=100)
+        'n_estimators': trial.suggest_int('n_estimators', 200, 1000, step=100),
+        'max_depth': trial.suggest_int('max_depth', -1, 15),
+        'min_data_in_leaf': trial.suggest_int('min_data_in_leaf', 5, 100),
+        'feature_fraction': trial.suggest_float('feature_fraction', 0.5, 1.0),
+        'bagging_fraction': trial.suggest_float('bagging_fraction', 0.5, 1.0),
+        'bagging_freq': trial.suggest_int('bagging_freq', 0, 10),
+        # lambda_l2 must be > 0 when using log=True
+        'lambda_l2': trial.suggest_float('lambda_l2', 1e-8, 10.0, log=True),
+        'min_gain_to_split': trial.suggest_float('min_gain_to_split', 0.0, 1.0)
     }
     
     params = FIXED_PARAMETERS.copy()
@@ -128,10 +136,11 @@ def generate_cached_predictions(sample_size: float) -> pd.DataFrame:
 
     # Train
     print("[1/3] Training XGBoost...")
-    xgb_ranker.train(train_set, val_set)
+    xgb_ranker.train(train_set, val_set, feature_list=pipeline.feature_cols)
     print("[2/3] Training LightGBM...")
-    lgbm_ranker.train(train_set, val_set)
+    lgbm_ranker.train(train_set, val_set, feature_list=pipeline.feature_cols)
     print("[3/3] Training CatBoost...")
+    cat_ranker.feature_names = pipeline.feature_cols
     cat_ranker.train(train_set, val_set)
 
     # Predict & Cache

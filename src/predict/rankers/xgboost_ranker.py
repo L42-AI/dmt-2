@@ -34,8 +34,13 @@ class XGBoostRanker(RankDataProcessor):
         self.reg_alpha = reg_alpha     
         self.random_state = random_state
 
-    def train(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None) -> None:
-        self.feature_names = self._get_feature_columns(train_df)
+    def train(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None, feature_list: list[str] | None = None) -> None:
+        # Use an explicit feature list when provided to ensure consistency
+        if feature_list is not None:
+            self.feature_names = feature_list
+        else:
+            self.feature_names = self._get_feature_columns(train_df)
+
         train_df, X_train, y_train, group_train = self._prepare_rank_data(train_df, self.feature_names)
 
         if val_df is not None:

@@ -44,11 +44,10 @@ def _compute_ndcg_bulk(relevances, group_boundaries, k):
         for rank in range(rank_limit):
             ideal_dcg += ideal_relevances[rank] * discounts[rank]
 
-        # Keep existing behavior: groups with zero ideal DCG count as zero contribution.
+        # Only include groups that have a non-zero ideal DCG in the average.
         if ideal_dcg > 0.0:
             total_ndcg += actual_dcg / ideal_dcg
-
-        valid_groups += 1
+            valid_groups += 1
 
     return total_ndcg / valid_groups if valid_groups > 0 else 0.0
 

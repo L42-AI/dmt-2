@@ -1,14 +1,9 @@
 from typing import Literal
-
-import numpy as np
 import pandas as pd
 
 from data import load_data
-from data import preprocess_data, select_randomized_instances
-from data import train_val_split
-from data import convert_target_to_relevance_scores
+from data import preprocess_data
 from data.feature_selection import select_feature_columns
-
 from predict import (
     clear_predictions,
     random,
@@ -18,8 +13,8 @@ from predict import (
     XGBoostRanker,
     ContentKnowledgeRecommender
 )
-
 from evaluate import compute_accuracy
+
 
 class Pipeline:
 
@@ -84,17 +79,31 @@ class Pipeline:
 
     def _run_lambdamart(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
         params = self.parameters['lambdamart']
-        ranker = LambdaMARTRanker(num_leaves=params['num_leaves'], learning_rate=params['learning_rate'], n_estimators=params['n_estimators'])
-        ranker.train(train_set, val_set)
+        ranker = LambdaMARTRanker(
+            params = params
+            # num_leaves=params.get('num_leaves', 31),
+            # learning_rate=params.get('learning_rate', 0.1),
+            # n_estimators=params.get('n_estimators', 100),
+        )
+        # set extended params if present
+        # ranker.max_depth = params.get('max_depth', ranker.max_depth)
+        # ranker.min_data_in_leaf = params.get('min_data_in_leaf', ranker.min_data_in_leaf)
+        # ranker.feature_fraction = params.get('feature_fraction', ranker.feature_fraction)
+        # ranker.bagging_fraction = params.get('bagging_fraction', ranker.bagging_fraction)
+        # ranker.bagging_freq = params.get('bagging_freq', ranker.bagging_freq)
+        # ranker.lambda_l2 = params.get('lambda_l2', ranker.lambda_l2)
+        # ranker.min_gain_to_split = params.get('min_gain_to_split', ranker.min_gain_to_split)
+
+        ranker.train(train_set, val_set, feature_list=self.feature_cols)
         
         # See feature importance of training evaluation (not validation!)
         if self.view_importance:
             print('Most important features')
             feature_importance_df = ranker.get_feature_importance(importance_type='gain', ascending=False)
-            print(feature_importance_df.head(10))
+            print(feature_importance_df.head(20))
             print('Least important features')
             feature_importance_df = ranker.get_feature_importance(importance_type='gain', ascending=True)
-            print(feature_importance_df.head(10))
+            print(feature_importance_df.head(20))
 
         return self._run_predictions(
             train_set,
@@ -119,7 +128,7 @@ class Pipeline:
             reg_alpha=params['reg_alpha']
         )
 
-        ranker.train(train_set, val_set)
+        ranker.train(train_set, val_set, feature_list=self.feature_cols)
         return self._run_predictions(
             train_set,
             val_set,
@@ -150,7 +159,7 @@ class Pipeline:
             l2_leaf_reg=params['l2_leaf_reg'],
         )
 
-        ranker.train(train_set, val_set)
+        ranker.train(train_set, val_set, feature_list=self.feature_cols)
         return self._run_predictions(
             train_set,
             val_set,
@@ -165,29 +174,23 @@ class Pipeline:
         # 1. Define your Ensemble Weights
         # These should sum to 1.0. You will tune these later based on validation scores!
         weights = {
-            'xgb': 0.45,
-            'lgbm': 0.35,
-            'cat': 0.20
+            'xgb': 0.6,
+            'lgbm': 0.4
         }
 
         # 2. Initialize All Three Models (Assuming CatBoostRanker is added to predict.py)
         xgb_params = self.parameters.get('xgboost', {})
         lgbm_params = self.parameters.get('lambdamart', {})
-        cat_params = self.parameters.get('catboost', {}) # Add this to your parameters dict
 
         xgb_ranker = XGBoostRanker(**xgb_params)
-        lgbm_ranker = LambdaMARTRanker(**lgbm_params)
-        cat_ranker = CatBoostRanker(**cat_params) # You will need to implement this class
+        lgbm_ranker = LambdaMARTRanker(params = lgbm_params)
 
         # 3. Train independently
         print(f"[1/3] Training XGBoost (Weight: {weights['xgb']})...")
-        xgb_ranker.train(train_set, val_set)
+        xgb_ranker.train(train_set, val_set, feature_list=self.feature_cols)
         
         print(f"[2/3] Training LightGBM (Weight: {weights['lgbm']})...")
-        lgbm_ranker.train(train_set, val_set)
-
-        print(f"[3/3] Training CatBoost (Weight: {weights['cat']})...")
-        cat_ranker.train(train_set, val_set)
+        lgbm_ranker.train(train_set, val_set, feature_list=self.feature_cols)
 
         # 4. The Weighted RRF Prediction Function
         def ensemble_predict(df: pd.DataFrame):
@@ -196,19 +199,16 @@ class Pipeline:
             # Extract predictions and rename columns safely
             xgb_ranks = xgb_ranker.predict(df)[['srch_id', 'prop_id', 'position']].rename(columns={'position': 'xgb_pos'})
             lgbm_ranks = lgbm_ranker.predict(df)[['srch_id', 'prop_id', 'position']].rename(columns={'position': 'lgbm_pos'})
-            cat_ranks = cat_ranker.predict(df)[['srch_id', 'prop_id', 'position']].rename(columns={'position': 'cat_pos'})
             
             # Merge all three onto the master dataframe
             df_out = df_out.merge(xgb_ranks, on=['srch_id', 'prop_id'], how='left')
             df_out = df_out.merge(lgbm_ranks, on=['srch_id', 'prop_id'], how='left')
-            df_out = df_out.merge(cat_ranks, on=['srch_id', 'prop_id'], how='left')
             
             # Calculate the Weighted Reciprocal Rank Fusion Score (k=60 is standard)
             k = 60
             df_out['rrf_score'] = (
                 (weights['xgb'] * (1.0 / (k + df_out['xgb_pos']))) +
-                (weights['lgbm'] * (1.0 / (k + df_out['lgbm_pos']))) +
-                (weights['cat'] * (1.0 / (k + df_out['cat_pos'])))
+                (weights['lgbm'] * (1.0 / (k + df_out['lgbm_pos'])))
             )
             
             # Re-rank based on the final weighted score (Higher score = Better rank)
@@ -219,7 +219,7 @@ class Pipeline:
             
             # Sort and clean up
             df_out = df_out.sort_values(by=['srch_id', 'position']).reset_index(drop=True)
-            df_out = df_out.drop(columns=['xgb_pos', 'lgbm_pos', 'cat_pos', 'rrf_score'])
+            df_out = df_out.drop(columns=['xgb_pos', 'lgbm_pos', 'rrf_score'])
             
             return df_out
 

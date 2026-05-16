@@ -8,9 +8,19 @@ from data import export_submission
 
 parameters = {
     'lambdamart': {
-        'num_leaves'        : 31,
-        'learning_rate'     : 0.1,
-        'n_estimators'      : 100
+        'objective'         : 'rank_xendcg',
+        'metric'            : 'ndcg',
+        'num_leaves'        : 23,
+        'learning_rate'     : 0.0477149,
+        'n_estimators'      : 900,
+        'max_depth'         : 0,
+        'min_data_in_leaf'  : 60,
+        'feature_fraction'  : 0.7645,
+        'bagging_fraction'  : 0.82164,
+        'bagging_freq'      : 0,
+        'lambda_l2'         : 0.00012255,
+        'min_gain_to_split' : 0.121372,
+        'verbose'           : -1
     },
     'xgboost': {
         'max_depth'         : 7,
@@ -38,10 +48,10 @@ parameters = {
 }
 
 start_time = time.monotonic()
-pipeline = Pipeline(parameters = parameters, sample_size = .2, view_importance = True)
+pipeline = Pipeline(parameters = parameters, sample_size = 0.2, view_importance = True)
 
 # Setup approaches and metrics (to be shown in logs)
-approaches = ['xgboost', 'lambdamart', 'catboost', 'ensemble']
+approaches = ['xgboost', 'lambdamart', 'ensemble']
 approaches = ['ensemble']
 metric_names = ['Training Accuracy', 'Validation Accuracy', 'Test Accuracy']
 
