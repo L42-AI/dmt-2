@@ -13,7 +13,6 @@ from predict import (
     clear_predictions,
     random,
     ceiling,
-    CatBoostRanker,
     LambdaMARTRanker,
     XGBoostRanker,
     ContentKnowledgeRecommender
