@@ -29,7 +29,6 @@ class Scaler:
     def fit_transform(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
         # Identify columns to scale all at once
         cols_to_scale = [col for col in train_set.columns if col not in self.exclude]
-        print(cols_to_scale)        
         # If there's nothing to scale, just return the dataframes
         if not cols_to_scale:
             return train_set, val_set, test_set
