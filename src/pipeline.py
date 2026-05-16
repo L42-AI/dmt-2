@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from data import load_data
-from data import preprocess_data, cross_set_preprocessing, select_randomized_instances
+from data import preprocess_data, select_randomized_instances
 from data import train_val_split
 from data import convert_target_to_relevance_scores
 from data.feature_selection import select_feature_columns

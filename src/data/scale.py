@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+from sklearn import set_config
+set_config(transform_output="pandas")
+from sklearn.preprocessing import MinMaxScaler
 
 def scale_bounded(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -18,16 +21,25 @@ def clip_persona_variables(df: pd.DataFrame) -> pd.DataFrame:
     
     return df
 
-def scale_scores(df: pd.DataFrame, column: str, type: str = 'minmax') -> pd.Series:
-    """ Get all scores between 1 and 5 and convert them to 0-1, ignore missing values."""
-    series = df[column]
-    if type == 'minmax': 
-        scaled = (series- series.min()) / (series.max() - series.min())
-    if type == 'logminmax':
-        log_series = np.log1p(series)
-        scaled =(log_series- log_series.min()) / (log_series.max() - log_series.min())
-    if type == 'sigmoid':
-        z = (series - series.mean()) / series.std()
-        scaled = 1 / 1 + np.exp(-z)
-        
-    return series.where(series.isna(), scaled)
+class Scaler:
+    def __init__(self, exclude):
+        self.minmax_scaler = MinMaxScaler()
+        self.exclude = set(exclude)  # Set for faster lookups
+
+    def fit_transform(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
+        # Identify columns to scale all at once
+        cols_to_scale = [col for col in train_set.columns if col not in self.exclude]
+        print(cols_to_scale)        
+        # If there's nothing to scale, just return the dataframes
+        if not cols_to_scale:
+            return train_set, val_set, test_set
+
+        # Fit and transform 
+        train_set[cols_to_scale] = self.minmax_scaler.fit_transform(train_set[cols_to_scale])
+        val_set[cols_to_scale] = self.minmax_scaler.transform(val_set[cols_to_scale])
+        test_set[cols_to_scale] = self.minmax_scaler.transform(test_set[cols_to_scale])
+
+        return train_set, val_set, test_set
+
+
+

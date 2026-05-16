@@ -2,7 +2,7 @@ import pandas as pd
 
 
 from .split import train_val_split
-from .scale import scale_scores
+from .scale import Scaler
 
 from .features.ids import resample_ids
 from .features.distance import GraphDistanceImputer
@@ -35,7 +35,6 @@ def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
     # === Historical user star-rating
     dest_star_median = df.groupby('srch_destination_id')['prop_starrating'].transform('median')
     df['visitor_hist_starrating'] = df['visitor_hist_starrating'].fillna(dest_star_median)
-    df['visitor_hist_starrating'] = scale_scores(df, 'visitor_hist_starrating') # Scale AFTER filling
 
     # === Historical user mean-price per night
     dest_price_median = df.groupby('srch_destination_id')['price_usd'].transform('median')
@@ -45,7 +44,6 @@ def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
     # === Property star-rating
     # According to description, 0s are essentially missing values. No NAs in raw data.
     df['prop_starrating'] = df['prop_starrating'].replace(0.0, np.nan)
-    df['prop_starrating'] = scale_scores(df, 'prop_starrating')
     df['prop_starrating_missing'] = df['prop_starrating'].isna().astype('uint8')
 
     # === Property review-scores
@@ -62,7 +60,6 @@ def _clean_impute_and_scale(df: pd.DataFrame) -> pd.DataFrame:
     df['prop_review_score'] = df['prop_review_score'].fillna(dest_review_median)
     # Replace 0 with nans, which will be passed to the models.
     df['prop_review_score'] = df['prop_review_score'].replace(0.0, np.nan) # replace 0s so that scaling is unbiased
-    df['prop_review_score'] = scale_scores(df, 'prop_review_score')
 
     # === Location scores
     # Score 1
@@ -168,5 +165,10 @@ def preprocess_data(train_set: pd.DataFrame, test_set: pd.DataFrame) -> tuple:
     train_set = _engineer_features(train_set)
     val_set = _engineer_features(val_set)
     test_set = _engineer_features(test_set)
+
+    categoricals = ['srch_id', 'site_id', 'prop_country_id', 'prop_id', 'srch_destination_id', 
+                    'prop_brand_bool', 'srch_saturday_night_bool', 'random_bool']
+    scaler = Scaler(exclude = categoricals + ['date_time', 'checkin_date', 'checkout_date', 'relevance'])
+    train_set, val_set, test_set = scaler.fit_transform(train_set, val_set, test_set)
 
     return train_set, val_set, test_set
