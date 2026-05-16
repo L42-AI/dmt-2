@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from data import load_data
-from data import preprocess_data
+from data import preprocess_data, cross_set_preprocessing, select_randomized_instances
 from data import train_val_split
 from data import convert_target_to_relevance_scores
 from data.feature_selection import select_feature_columns
@@ -25,8 +25,9 @@ class Pipeline:
 
     TRAIN_RATIO = 0.8
 
-    def __init__(self, parameters: dict, sample_size: float = 1):
+    def __init__(self, parameters: dict, sample_size: float = 1.0, view_importance: bool = False):
         self.parameters = parameters
+        self.view_importance = view_importance
 
         train_set, test_set = load_data(sample_size, random_state=42)
 
@@ -85,6 +86,15 @@ class Pipeline:
         params = self.parameters['lambdamart']
         ranker = LambdaMARTRanker(num_leaves=params['num_leaves'], learning_rate=params['learning_rate'], n_estimators=params['n_estimators'])
         ranker.train(train_set, val_set)
+        
+        # See feature importance of training evaluation (not validation!)
+        if self.view_importance:
+            print('Most important features')
+            feature_importance_df = ranker.get_feature_importance(importance_type='gain', ascending=False)
+            print(feature_importance_df.head(10))
+            print('Least important features')
+            feature_importance_df = ranker.get_feature_importance(importance_type='gain', ascending=True)
+            print(feature_importance_df.head(10))
 
         return self._run_predictions(
             train_set,

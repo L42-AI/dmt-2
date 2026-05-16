@@ -38,7 +38,7 @@ parameters = {
 }
 
 start_time = time.monotonic()
-pipeline = Pipeline(parameters = parameters, sample_size = .2)
+pipeline = Pipeline(parameters = parameters, sample_size = .2, view_importance = True)
 
 # Setup approaches and metrics (to be shown in logs)
 approaches = ['xgboost', 'lambdamart', 'catboost', 'ensemble']

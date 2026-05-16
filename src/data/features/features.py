@@ -30,6 +30,32 @@ def convert_target_to_relevance_scores(df: pd.DataFrame) -> pd.DataFrame:
     df.drop(columns=['click_bool', 'booking_bool', 'gross_bookings_usd', 'position'], inplace=True)
     return df
 
+def build_binary_season(name: str, df: pd.DataFrame, start: int, end: int, ref: str = 'date_time') -> pd.DataFrame:
+    """Build a boolean variable which flags whether a date-time of a query is within a specified
+    period. For example, if one can define a high-season, one can check whether the query 
+    happended within that season. The start and end boundaries are inclusive. 
+
+    Args:
+        name (string):      The name of the new variable
+        df (pd.DataFrame):  The dataframe to edit
+        start (int):        The starting month of the specified period
+        end (int):          The last month of the specified period
+        ref (string):       The variable to reference. For example query datetime, 
+                            or check-in date. 
+    """
+    df[name] = df[ref].dt.month.between(start, end) # .between is inclusuve !
+    return df
+
+def build_five_star_flag(df: pd.DataFrame) -> pd.DataFrame:
+    df['five_star'] = (df['prop_starrating'] == 5)
+    return df
+
+def build_urgency_variables(df:pd.DataFrame) -> pd.DataFrame:
+    df['last_minute'] = (df['srch_booking_window'] < 7).astype('uint8')
+    df['last_minute_promo'] = (df['last_minute'] * df['promotion_flag'])
+    df['price_urgency_ratio'] = df['price_usd'] / (df['srch_booking_window']+1)
+    return df
+
 def build_flag_variable(name: str, df: pd.DataFrame, variable: str, value: float = 0.0) -> pd.DataFrame:
     """ Replaces specified values in variable with NA, and creates a new variable that 
     denotes when NA has occured for a hotel.
@@ -40,7 +66,7 @@ def build_flag_variable(name: str, df: pd.DataFrame, variable: str, value: float
         value (float)       : The value to replace with pd.NA
     """
     # First, create flag variable
-    df[name] = df[variable][df[variable] == value].astype(int)
+    df[name] = df[variable][df[variable] == value].astype('uint8')
     # Then, replace the specified values with NAs
     df[variable] = df[variable].replace(value, np.float64('nan'))
     return df
@@ -75,7 +101,6 @@ def add_travel_party_features(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-
 def add_price_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     Add simple price transformations
@@ -86,10 +111,13 @@ def add_price_features(df: pd.DataFrame) -> pd.DataFrame:
     guests = df['srch_total_guests'].clip(lower=1) if 'srch_total_guests' in df.columns else 1 # Use total guests if available, otherwise default to 1 to avoid division by zero
 
     # Price per night, price per guest, and price per guest-night can help the model learn about the value proposition of the hotel for different types of travelers and trip lengths
-    df['price_per_night'] = df['price_usd'] / nights 
+    df['price_per_night'] = df['price_usd'] / nights  # DAN: the price_usd can be either per night or per stay. If it is per night, this will be wrong. 
     df['price_per_guest'] = df['price_usd'] / guests
     df['price_per_guest_night'] = df['price_usd'] / (guests * nights)
 
+    # Value for money metrics
+    df['price_per_star'] = df['price_usd'] / df['prop_starrating'].replace(0, np.nan)
+    df['price_per_review_score'] = df['price_usd'] / df['prop_review_score'].replace(0, np.nan)
     return df
 
 
@@ -100,20 +128,17 @@ def add_history_match_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     # For example, if a user historically prefers 4-star hotels, then a 4-star hotel in the current search might be more relevant than a 2-star or 5-star hotel. This feature captures that preference alignment.
     df['star_vs_user_history'] = (
-        df['prop_starrating'].replace(-1, np.nan)
-        - df['visitor_hist_starrating'].replace(-1, np.nan)
-    ).fillna(0)
-
+        df['prop_starrating']
+        - df['visitor_hist_starrating']
+    )
     # Similarly, if a user historically has an average daily rate (ADR) of $100, 
     # then a hotel priced around $100 might be more relevant than one priced at $50 or $200
     # This feature captures how the current hotel's price compares to the user's historical spending habits
-    price_dollars = df['price_usd'] / 100
-    hist_adr = df['visitor_hist_adr_usd'].replace(-1, np.nan)
-
+    price_dollars = df['price_usd'] # / 100
+    hist_adr = df['visitor_hist_adr_usd']
     df['price_vs_user_hist_adr'] = (
         (price_dollars - hist_adr) / hist_adr.replace(0, np.nan)
-    ).replace([np.inf, -np.inf], np.nan).fillna(0)
-
+    ).replace([np.inf, -np.inf], np.nan)
     return df
 
 
@@ -161,6 +186,8 @@ def add_query_relative_features(df: pd.DataFrame) -> pd.DataFrame:
         'prop_log_historical_price',
         'srch_query_affinity_score',
         'orig_destination_distance',
+        'test_random_star',
+        'test_random_location'
     ]
 
     # For each of these columns, we will compute features that describe 
@@ -170,21 +197,27 @@ def add_query_relative_features(df: pd.DataFrame) -> pd.DataFrame:
         if col not in df.columns:
             continue
 
-        x = df[col].replace(-1, np.nan)
+        x = df[col]
         g = x.groupby(df['srch_id'])
 
         mean = g.transform('mean')
+        median = g.transform('median')
         min_val = g.transform('min')
         max_val = g.transform('max')
 
-        new_cols[f'{col}_minus_query_mean'] = (x - mean).fillna(0)
+        new_cols[f'{col}_minus_query_mean'] = (x - mean)
         new_cols[f'{col}_div_query_mean'] = (
             x / mean.replace(0, np.nan)
-        ).replace([np.inf, -np.inf], np.nan).fillna(1)
+        ).replace([np.inf, -np.inf], np.nan)
+        new_cols[f'{col}_minus_query_median'] = (x - median)
+        new_cols[f'{col}_div_query_median'] = (
+            x / median.replace(0, np.nan)
+        ).replace([np.inf, -np.inf], np.nan)
 
-        new_cols[f'{col}_query_pct_rank'] = g.rank(pct=True).fillna(0)
-        new_cols[f'{col}_is_query_min'] = (x == min_val).fillna(False).astype('uint8')
-        new_cols[f'{col}_is_query_max'] = (x == max_val).fillna(False).astype('uint8')
+        new_cols[f'{col}_query_pct_rank'] = g.rank(pct=True)
+        new_cols[f'{col}_is_query_min'] = (x == min_val).astype('uint8')
+        new_cols[f'{col}_is_query_max'] = (x == max_val).astype('uint8')
+
 
     if new_cols:
         new_df = pd.DataFrame(new_cols, index=df.index)
@@ -207,3 +240,34 @@ def add_distance_bucketization(df: pd.DataFrame, num_buckets: int = 50) -> pd.Da
     )
 
     return df
+
+def add_stats_per_prop(df: pd.DataFrame) -> pd.DataFrame:
+    cols = [
+        'price_usd',
+        'price_usd_log',
+        'price_per_night',
+        'prop_starrating',
+        'prop_review_score',
+        'prop_location_score1',
+        'prop_location_score2',
+        'prop_log_historical_price',
+        'srch_query_affinity_score',
+        'orig_destination_distance',
+    ]
+    new_cols = {}
+    for col in cols:
+        if col not in df.columns:
+            continue
+
+        means = df.groupby('prop_id')[col].mean()
+        stds = df.groupby('prop_id')[col].std()
+        medians = df.groupby('prop_id')[col].median()
+
+        new_cols[f'prop_mean_{col}'] = df['prop_id'].map(means)
+        new_cols[f'prop_std_{col}'] = df['prop_id'].map(stds)
+        new_cols[f'prop_median_{col}'] = df['prop_id'].map(medians)
+    
+    if new_cols:
+        new_df = pd.DataFrame(new_cols, index = df.index)
+        df = pd.concat([df, new_df], axis = 1)
+    return df 

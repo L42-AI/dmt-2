@@ -12,3 +12,4 @@ submission.csv
 .venv
 metric_history.csv
 *.parquet
+pi/

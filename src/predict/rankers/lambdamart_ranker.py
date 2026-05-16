@@ -61,3 +61,14 @@ class LambdaMARTRanker(RankDataProcessor):
         )
 
         print(f"LambdaMART training complete. Trained on {len(train_df)} samples across {len(group_train)} queries.")
+
+    def get_feature_importance(self, importance_type = 'split', ascending: bool = False) -> pd.DataFrame:
+        importance_values = self.model.feature_importance(importance_type = importance_type)
+        feature_names = self.model.feature_name()
+        importance_df = pd.DataFrame({
+            'feature' : feature_names,
+            'importance': importance_values
+        })
+        importance_df = importance_df.sort_values(by='importance', ascending=ascending).reset_index(drop=True)
+        return importance_df
+
