@@ -14,7 +14,8 @@ PARAMS = {
         "reg_lambda": 1000.0,
         "max_depth": 9,
         "subsample": 0.8243444512755314,
-        "min_gain_to_split": 0.02230882376865448
+        "min_gain_to_split": 0.02230882376865448,
+        'label_gain'        : [0, 1, 0, 0, 0, 5], 
     },
     'xgboost': {
         'n_estimators': 2052,
@@ -28,7 +29,7 @@ PARAMS = {
         'reg_lambda': 427.7164551309011,
     },
     'ensemble_weights': {
-        'xgb': 0.65,
-        'lgbm': 0.35
+        'xgb': 0.67,
+        'lgbm': 0.33
     }
 }
