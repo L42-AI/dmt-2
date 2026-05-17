@@ -9,13 +9,14 @@ from data import export_submission
 from consts import PARAMS
 
 start_time = time.monotonic()
-pipeline = Pipeline(parameters = PARAMS, sample_size = .1)
+pipeline = Pipeline(parameters = PARAMS, sample_size = .1, view_importance = True)
 
 # Setup approaches and metrics (to be shown in logs)
 approaches = ['xgboost', 'lambdamart', 'ensemble']
 approaches = ['lambdamart']
 # approaches = ['ensemble']
 metric_names = ['Train NDCG@5', 'Validation NDCG@5', 'Test NDCG@5']
+
 # Write header
 init_log(metric_names)
 

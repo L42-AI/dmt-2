@@ -1,14 +1,9 @@
 from typing import Literal
-
-import numpy as np
 import pandas as pd
 
 from data import load_data
 from data import preprocess_data
-from data import train_val_split
-from data import convert_target_to_relevance_scores
 from data.feature_selection import select_feature_columns
-
 from predict import (
     clear_predictions,
     random,
@@ -17,15 +12,16 @@ from predict import (
     XGBoostRanker,
     ContentKnowledgeRecommender
 )
-
 from evaluate import compute_accuracy
+
 
 class Pipeline:
 
     TRAIN_RATIO = 0.8
 
-    def __init__(self, parameters: dict, sample_size: float = 1):
+    def __init__(self, parameters: dict, sample_size: float = 1.0, view_importance: bool = False):
         self.parameters = parameters
+        self.view_importance = view_importance
 
         train_set, test_set = load_data(sample_size, random_state=42)
 
@@ -81,8 +77,19 @@ class Pipeline:
 
     def _run_lambdamart(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
         params = self.parameters['lambdamart']
-        ranker = LambdaMARTRanker(parameters=params)
-        ranker.train(train_set, val_set)
+        ranker = LambdaMARTRanker(
+            params = params
+        )
+        ranker.train(train_set, val_set, feature_list=self.feature_cols)
+        
+        # See feature importance of training evaluation (not validation!)
+        if self.view_importance:
+            print('Most important features')
+            feature_importance_df = ranker.get_feature_importance(importance_type='gain', ascending=False)
+            print(feature_importance_df.head(20))
+            print('Least important features')
+            feature_importance_df = ranker.get_feature_importance(importance_type='gain', ascending=True)
+            print(feature_importance_df.head(20))
 
         return self._run_predictions(
             train_set,
@@ -97,7 +104,7 @@ class Pipeline:
 
         ranker = XGBoostRanker(parameters=params)
 
-        ranker.train(train_set, val_set)
+        ranker.train(train_set, val_set, feature_list=self.feature_cols)
         return self._run_predictions(
             train_set,
             val_set,
@@ -134,9 +141,11 @@ class Pipeline:
 
         # 3. Train independently
         print(f"[1/2] Training XGBoost (Weight: {weights['xgb']})...")
+        xgb_ranker.train(train_set, val_set, feature_list=self.feature_cols)
         xgb_ranker.train(train_set, val_set)
         
         print(f"[2/2] Training LightGBM (Weight: {weights['lgbm']})...")
+        lgbm_ranker.train(train_set, val_set, feature_list=self.feature_cols)
         lgbm_ranker.train(train_set, val_set)
 
         # 4. The Weighted RRF Prediction Function
