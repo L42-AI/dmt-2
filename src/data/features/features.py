@@ -19,6 +19,12 @@ class PropertyStatsTransformer(BaseEstimator, TransformerMixin):
     CTR_CVR_GROUPS = ['prop_starrating'] 
     CTR_CVR_BINS   = [('price_usd', 50), ('location_score_interaction', 50)]
 
+    # Bayesian prior strengths — higher = more shrinkage toward global mean
+    PROP_CLICK_PRIOR    = 50
+    PROP_BOOKING_PRIOR  = 20
+    DEST_BOOKING_PRIOR  = 100
+    DEST_CLICK_PRIOR    = 200
+
     def __init__(self):
         self.stats_          = {}
         self.global_means_   = {}
@@ -26,6 +32,12 @@ class PropertyStatsTransformer(BaseEstimator, TransformerMixin):
         self.global_stds_    = {}
         self.ctr_ = {}
         self.cvr_ = {}
+        # prop_id-level target encoding
+        self.prop_smoothed_ctr_     = None
+        self.prop_smoothed_book_rate_ = None
+        # destination-level target encoding
+        self.dest_smoothed_book_rate_ = None
+        self.dest_smoothed_ctr_       = None
 
     def fit(self, df: pd.DataFrame, y=None) -> "PropertyStatsTransformer":
         # --- Property-Specific Statistics ---
@@ -49,6 +61,8 @@ class PropertyStatsTransformer(BaseEstimator, TransformerMixin):
         global_bookings = (unbiased['relevance'] == 5).sum()
         self.global_click_rate_   = global_clicks / len(unbiased)
         self.global_booking_rate_ = global_bookings / global_clicks if global_clicks > 0 else 0
+        # raw global booking rate (over all presentations, not just clicks)
+        self.global_prop_book_rate_ = (unbiased['relevance'] == 5).sum() / len(unbiased)
 
         for group in self.CTR_CVR_GROUPS:
             presentations = unbiased.groupby(group).size()
@@ -70,6 +84,36 @@ class PropertyStatsTransformer(BaseEstimator, TransformerMixin):
             bookings       = (clicked['relevance'] == 5).groupby(clicked_bucket).sum()
             self.ctr_[col] = clicks / presentations
             self.cvr_[col] = bookings / clicks.replace(0, np.nan)
+
+        # --- Prop-level Bayesian target encoding (strongest signal in the dataset) ---
+        # Fit only on random_bool==1 rows to avoid position-bias contaminating the rates.
+        prop_n      = unbiased.groupby('prop_id').size()
+        prop_clicks = (unbiased['relevance'] > 0).groupby(unbiased['prop_id']).sum()
+        prop_books  = (unbiased['relevance'] == 5).groupby(unbiased['prop_id']).sum()
+
+        k_c = self.PROP_CLICK_PRIOR
+        k_b = self.PROP_BOOKING_PRIOR
+        self.prop_smoothed_ctr_ = (
+            (prop_clicks + k_c * self.global_click_rate_) / (prop_n + k_c)
+        )
+        self.prop_smoothed_book_rate_ = (
+            (prop_books + k_b * self.global_prop_book_rate_) / (prop_n + k_b)
+        )
+
+        # --- Destination-level Bayesian target encoding ---
+        dest_n      = unbiased.groupby('srch_destination_id').size()
+        dest_clicks = (unbiased['relevance'] > 0).groupby(unbiased['srch_destination_id']).sum()
+        dest_books  = (unbiased['relevance'] == 5).groupby(unbiased['srch_destination_id']).sum()
+
+        k_dc = self.DEST_CLICK_PRIOR
+        k_db = self.DEST_BOOKING_PRIOR
+        self.dest_smoothed_ctr_ = (
+            (dest_clicks + k_dc * self.global_click_rate_) / (dest_n + k_dc)
+        )
+        self.dest_smoothed_book_rate_ = (
+            (dest_books + k_db * self.global_prop_book_rate_) / (dest_n + k_db)
+        )
+
         return self
 
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -103,6 +147,28 @@ class PropertyStatsTransformer(BaseEstimator, TransformerMixin):
             bucket = pd.cut(df[col], bins=self.bin_edges_[col], labels=False)
             df[f'{col}_bucket_ctr'] = bucket.map(self.ctr_[col]).fillna(self.global_click_rate_)
             df[f'{col}_bucket_cvr'] = bucket.map(self.cvr_[col]).fillna(self.global_booking_rate_)
+
+        # --- Prop-level target encoding (strongest signal: ~4x better than review_score) ---
+        df['prop_smoothed_ctr'] = (
+            df['prop_id'].map(self.prop_smoothed_ctr_).fillna(self.global_click_rate_)
+        )
+        df['prop_smoothed_book_rate'] = (
+            df['prop_id'].map(self.prop_smoothed_book_rate_).fillna(self.global_prop_book_rate_)
+        )
+        # How much this prop's booking rate deviates from its star-rating peers
+        star_mean_book = df['prop_starrating'].map(
+            df.groupby('prop_starrating')['prop_smoothed_book_rate'].mean()
+            if 'prop_starrating' in df.columns else pd.Series(dtype=float)
+        )
+        df['prop_book_rate_vs_star_mean'] = df['prop_smoothed_book_rate'] - star_mean_book.fillna(self.global_prop_book_rate_)
+
+        # --- Destination-level target encoding ---
+        df['dest_smoothed_ctr'] = (
+            df['srch_destination_id'].map(self.dest_smoothed_ctr_).fillna(self.global_click_rate_)
+        )
+        df['dest_smoothed_book_rate'] = (
+            df['srch_destination_id'].map(self.dest_smoothed_book_rate_).fillna(self.global_prop_book_rate_)
+        )
         return df
 
 

@@ -70,6 +70,11 @@ class FeatureEngineer:
             other=0,
         ).astype('uint8')
 
+        # Positions 5, 11, 17, 23 are likely ads.
+        # Flagging them lets the model debias without over-penalizing hotels placed there.
+        if 'position' in df.columns:
+            df['is_sponsored_slot'] = df['position'].isin({5, 11, 17, 23}).astype('uint8')
+
         return df
 
     def fit_transform(self, df: pd.DataFrame) -> pd.DataFrame:

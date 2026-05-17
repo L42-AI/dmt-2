@@ -5,7 +5,6 @@ load_dotenv()
 from pipeline import Pipeline
 from logistics import init_log, record_metrics
 from data import export_submission
-
 from consts import PARAMS
 
 start_time = time.monotonic()

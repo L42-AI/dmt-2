@@ -4,6 +4,9 @@ NON_FEATURE_COLUMNS = {
     # IDs / grouping columns
     'srch_id',
     'prop_id',
+    # 'prop_country_id',
+    # 'visitor_country_location_id',
+    # 'site_id',
 
     # datetime columns should be converted to numeric features first
     'date_time',
