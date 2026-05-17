@@ -4,18 +4,28 @@ SRC_DIR = Path(__file__).parent
 
 PARAMS = {
     'lambdamart': {
-        "log_max_bin": 7,
-        "n_estimators": 639,
-        "num_leaves": 225,
-        "min_child_samples": 2,
-        "learning_rate": 0.059024870262997915,
-        "colsample_bytree": 0.8392520450895368,
-        "reg_alpha": 0.09130717779270929,
-        "reg_lambda": 1000.0,
-        "max_depth": 9,
-        "subsample": 0.8243444512755314,
-        "min_gain_to_split": 0.02230882376865448,
-        'label_gain'        : [0, 1, 0, 0, 0, 5], 
+        "objective"         : 'rank_xendcg', # Switched to obey label_gain
+        "metric"            : 'ndcg',
+        "boosting"          : 'dart',       
+        "n_estimators"      : 639,
+        "num_leaves"        : 225,
+        "learning_rate"     : 0.059024870262997915,
+        "max_depth"         : 9,
+        "min_child_samples" : 7,            # Removed min_data_in_leaf
+        "subsample"         : 0.8243444512755314, # Removed bagging_fraction
+        "bagging_freq"      : 1,            # ACTIVATES subsample
+        "colsample_bytree"  : 0.8392520450895368, # Removed feature_fraction
+        "reg_alpha"         : 0.09130717779270929,
+        "reg_lambda"        : 1000.0,
+        "min_gain_to_split" : 0.02230882376865448,
+        "label_gain"        : [0, 1, 0, 0, 0, 31], 
+        "path_smooth"       : 0.54,
+        'lambdarank_truncation_level': 8,
+        'tree_learner': 'voting',
+        'lambdarank_norm': True,
+        'sigmoid': 1.2,
+        'extra_trees': True,
+        'max_bin': 127
     },
     'xgboost': {
         'n_estimators': 2052,

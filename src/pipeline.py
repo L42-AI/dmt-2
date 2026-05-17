@@ -77,9 +77,7 @@ class Pipeline:
 
     def _run_lambdamart(self, train_set: pd.DataFrame, val_set: pd.DataFrame, test_set: pd.DataFrame):
         params = self.parameters['lambdamart']
-        ranker = LambdaMARTRanker(
-            params = params
-        )
+        ranker = LambdaMARTRanker(params)
         ranker.train(train_set, val_set, feature_list=self.feature_cols)
         
         # See feature importance of training evaluation (not validation!)

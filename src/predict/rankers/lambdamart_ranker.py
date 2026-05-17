@@ -9,10 +9,10 @@ __all__ = ["LambdaMARTRanker"]
 class LambdaMARTRanker(RankDataProcessor):
     """LambdaMART learning-to-rank model for hotel search ranking."""
 
-    def __init__(self, params: dict):
+    def __init__(self, parameters: dict):
         super().__init__()
-        self.params = params
-        
+        self.params = parameters
+
     def train(self, train_df: pd.DataFrame, val_df: pd.DataFrame | None = None, feature_list: list[str] | None = None) -> None:
         """Train the LambdaMART model.
 
@@ -47,12 +47,21 @@ class LambdaMARTRanker(RankDataProcessor):
             )
 
         params = self.params
+
+        params['objective'] = params.get('objective', 'lambdarank')
+        params['metric'] = 'ndcg'
+        params['eval_at'] = [5]
+        params['random_state'] = 42
+        params['verbose'] = -1
+
+        n_rounds = params.pop('n_estimators', 100)
+
         self.model = lgb.train(
             params,
             train_data,
-            num_boost_round=params.get('n_estimators', 100),
+            num_boost_round=n_rounds,
             valid_sets=[valid_data] if valid_data is not None else None,
-            callbacks=[lgb.early_stopping(50)] if valid_data is not None else None
+            callbacks=[lgb.log_evaluation(100)] if valid_data is not None else None
         )
 
         print(f"LambdaMART training complete. Trained on {len(train_df)} samples across {len(group_train)} queries.")

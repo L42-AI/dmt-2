@@ -9,7 +9,7 @@ from data import export_submission
 from consts import PARAMS
 
 start_time = time.monotonic()
-pipeline = Pipeline(parameters = PARAMS, sample_size = .1, view_importance = True)
+pipeline = Pipeline(parameters = PARAMS, sample_size = .1)
 
 # Setup approaches and metrics (to be shown in logs)
 approaches = ['xgboost', 'lambdamart', 'ensemble']

@@ -5,7 +5,7 @@ from flaml import AutoML, tune
 from data import load_data, preprocess_data
 
 def exhaustive_multi_tune_with_flaml(sample_size: float = 1, total_time_budget: int = 18000):
-    models = ["lgbm", "xgboost"]
+    models = ["lgbm"]
     time_per_model = total_time_budget // len(models)
     
     print(f"=== INITIALIZING FLAML SEQUENTIAL TUNER ===")
@@ -44,16 +44,40 @@ def exhaustive_multi_tune_with_flaml(sample_size: float = 1, total_time_budget: 
             "reg_lambda": {"domain": tune.loguniform(0.001, 1000.0)} 
         },
         "lgbm": {
+            # --- 1. STRUCTURAL PARAMETERS ---
             "n_estimators": {"domain": tune.lograndint(100, 2000)},
             "num_leaves": {"domain": tune.lograndint(15, 1024)},
             "max_depth": {"domain": tune.randint(4, 12)},            
             "min_child_samples": {"domain": tune.lograndint(2, 100)},
+            
+            # --- 2. LEARNING & REGULARIZATION ---
             "learning_rate": {"domain": tune.loguniform(0.005, 0.2)},
-            "subsample": {"domain": tune.uniform(0.5, 1.0)},
-            "colsample_bytree": {"domain": tune.uniform(0.4, 1.0)},
             "min_gain_to_split": {"domain": tune.loguniform(0.01, 20.0)}, 
             "reg_alpha": {"domain": tune.loguniform(0.001, 100.0)},  
-            "reg_lambda": {"domain": tune.loguniform(0.001, 1000.0)} 
+            "reg_lambda": {"domain": tune.loguniform(0.001, 1000.0)}, 
+            
+            # --- 3. SAMPLING ---
+            "subsample": {"domain": tune.uniform(0.5, 1.0)},
+            "colsample_bytree": {"domain": tune.uniform(0.4, 1.0)},
+            
+            # --- 4. LAMBDARANK SPECIFIC PARAMETERS ---
+            "objective": {"domain": tune.choice(["lambdarank", "rank_xendcg"])},
+
+            "label_gain": {"domain": tune.choice([
+                [0, 1, 0, 0, 0, 1],     
+                [0, 1, 0, 0, 0, 5],     
+                [0, 1, 0, 0, 0, 15],    
+                [0, 1, 0, 0, 0, 31],    
+                [0, 1, 0, 0, 0, 127]    
+            ])},
+
+            "lambdarank_truncation_level": {"domain": tune.randint(5, 12)},
+            "lambdarank_norm": {"domain": tune.choice([True, False])},
+            "sigmoid": {"domain": tune.loguniform(0.5, 5.0)},
+            
+            "extra_trees": {"domain": tune.choice([True, False])},
+            "max_bin": {"domain": tune.choice([63, 127, 255, 511])},
+            "path_smooth": {"domain": tune.loguniform(0.01, 100.0)}
         }
     }
 
@@ -101,4 +125,4 @@ def exhaustive_multi_tune_with_flaml(sample_size: float = 1, total_time_budget: 
 
 if __name__ == "__main__":
     # 7200 seconds total = 1 hour for LightGBM, 1 hour for XGBoost
-    exhaustive_multi_tune_with_flaml(sample_size=1, total_time_budget=3600 * 5)
+    exhaustive_multi_tune_with_flaml(sample_size=.1, total_time_budget=3600 * 5)
