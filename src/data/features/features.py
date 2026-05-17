@@ -16,12 +16,16 @@ class PropertyStatsTransformer(BaseEstimator, TransformerMixin):
         'prop_location_score1',
         'prop_location_score2',
     ]
+    CTR_CVR_GROUPS = ['prop_starrating'] 
+    CTR_CVR_BINS   = [('price_usd', 50), ('location_score_interaction', 50)]
 
     def __init__(self):
         self.stats_          = {}
         self.global_means_   = {}
         self.global_medians_ = {}
         self.global_stds_    = {}
+        self.ctr_ = {}
+        self.cvr_ = {}
 
     def fit(self, df: pd.DataFrame, y=None) -> "PropertyStatsTransformer":
         for col in self.COLS:
@@ -35,6 +39,31 @@ class PropertyStatsTransformer(BaseEstimator, TransformerMixin):
             self.global_means_[col]   = df[col].mean()
             self.global_medians_[col] = df[col].median()  # correct fallback for median columns
             self.global_stds_[col]    = df[col].std()
+
+        clicked = df[df['relevance'] > 0]
+        self.global_click_rate_   = (df['relevance'] > 0).mean()
+        self.global_booking_rate_ = (df['relevance'] == 5).mean()
+
+        for group in self.CTR_CVR_GROUPS:
+            presentations = df.groupby(group).size()
+            clicks        = (df['relevance'] > 0).groupby(df[group]).sum()
+            bookings      = (clicked['relevance'] == 5).groupby(clicked[group]).sum()
+            self.ctr_[group] = clicks / presentations
+            self.cvr_[group] = bookings / clicks.replace(0, np.nan)
+
+        self.bin_edges_ = {}
+        for col, n_bins in self.CTR_CVR_BINS:
+            _, edges = pd.qcut(df[col], q=n_bins, retbins=True, duplicates='drop')
+            edges[0], edges[-1] = -np.inf, np.inf
+            self.bin_edges_[col] = edges
+
+            bucket = pd.cut(df[col], bins=edges, labels=False)
+            clicked_bucket = pd.cut(clicked[col], bins=edges, labels=False)
+            presentations = df.groupby(bucket).size()
+            clicks        = (df['relevance'] > 0).groupby(bucket).sum()
+            bookings      = (clicked['relevance'] == 5).groupby(clicked_bucket).sum()
+            self.ctr_[col] = clicks / presentations
+            self.cvr_[col] = bookings / clicks.replace(0, np.nan)
         return self
 
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -61,7 +90,13 @@ class PropertyStatsTransformer(BaseEstimator, TransformerMixin):
             df[f'{col}_prop_zscore'] = (
                 (df[col] - df[mean_col]) / std_series
             ).replace([np.inf, -np.inf], np.nan)
-
+        for group in self.CTR_CVR_GROUPS:
+            df[f'{group}_ctr'] = df[group].map(self.ctr_[group]).fillna(self.global_click_rate_)
+            df[f'{group}_cvr'] = df[group].map(self.cvr_[group]).fillna(self.global_booking_rate_)
+        for col, _ in self.CTR_CVR_BINS:
+            bucket = pd.cut(df[col], bins=self.bin_edges_[col], labels=False)
+            df[f'{col}_bucket_ctr'] = bucket.map(self.ctr_[col]).fillna(self.global_click_rate_)
+            df[f'{col}_bucket_cvr'] = bucket.map(self.cvr_[col]).fillna(self.global_booking_rate_)
         return df
 
 
@@ -142,7 +177,6 @@ def add_query_relative_features(df: pd.DataFrame) -> pd.DataFrame:
         'prop_location_score1', 'prop_location_score2',
         'prop_log_historical_price', 'srch_query_affinity_score',
         'orig_destination_distance',
-        'test_random_star', 'test_random_location',
     ]
 
     new_cols = {}

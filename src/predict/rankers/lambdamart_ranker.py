@@ -48,7 +48,7 @@ class LambdaMARTRanker(RankDataProcessor):
             train_data,
             num_boost_round=params.get('n_estimators', 100),
             valid_sets=[valid_data] if valid_data is not None else None,
-            callbacks=[lgb.early_stopping(10)] if valid_data is not None else None
+            callbacks=[lgb.early_stopping(50)] if valid_data is not None else None
         )
 
         print(f"LambdaMART training complete. Trained on {len(train_df)} samples across {len(group_train)} queries.")

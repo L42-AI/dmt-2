@@ -8,8 +8,10 @@ from data import export_submission
 
 parameters = {
     'lambdamart': {
-        'objective'         : 'rank_xendcg',
+        'objective'         : 'lambdarank',
         'metric'            : 'ndcg',
+        'eval_at'           : [5],
+        'label_gain'        : [0, 1, 0, 0, 0, 5],
         'num_leaves'        : 23,
         'learning_rate'     : 0.0477149,
         'n_estimators'      : 900,
@@ -48,11 +50,11 @@ parameters = {
 }
 
 start_time = time.monotonic()
-pipeline = Pipeline(parameters = parameters, sample_size = 0.2, view_importance = True)
+pipeline = Pipeline(parameters = parameters, sample_size = 0.5, view_importance = True)
 
 # Setup approaches and metrics (to be shown in logs)
 approaches = ['xgboost', 'lambdamart', 'ensemble']
-approaches = ['ensemble']
+approaches = ['lambdamart']
 metric_names = ['Training Accuracy', 'Validation Accuracy', 'Test Accuracy']
 
 # Write header
