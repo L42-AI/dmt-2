@@ -28,6 +28,7 @@ class PropertyStatsTransformer(BaseEstimator, TransformerMixin):
         self.cvr_ = {}
 
     def fit(self, df: pd.DataFrame, y=None) -> "PropertyStatsTransformer":
+        # --- Property-Specific Statistics ---
         for col in self.COLS:
             if col not in df.columns:
                 continue
@@ -40,13 +41,18 @@ class PropertyStatsTransformer(BaseEstimator, TransformerMixin):
             self.global_medians_[col] = df[col].median()  # correct fallback for median columns
             self.global_stds_[col]    = df[col].std()
 
-        clicked = df[df['relevance'] > 0]
-        self.global_click_rate_   = (df['relevance'] > 0).mean()
-        self.global_booking_rate_ = (df['relevance'] == 5).mean()
+        unbiased = df[df['random_bool'] == 1] if 'random_bool' in df.columns else df
+        clicked  = unbiased[unbiased['relevance'] > 0]
+
+        # --- CVR and CTR statistics ---
+        global_clicks   = (unbiased['relevance'] > 0).sum()
+        global_bookings = (unbiased['relevance'] == 5).sum()
+        self.global_click_rate_   = global_clicks / len(unbiased)
+        self.global_booking_rate_ = global_bookings / global_clicks if global_clicks > 0 else 0
 
         for group in self.CTR_CVR_GROUPS:
-            presentations = df.groupby(group).size()
-            clicks        = (df['relevance'] > 0).groupby(df[group]).sum()
+            presentations = unbiased.groupby(group).size()
+            clicks        = (unbiased['relevance'] > 0).groupby(unbiased[group]).sum()
             bookings      = (clicked['relevance'] == 5).groupby(clicked[group]).sum()
             self.ctr_[group] = clicks / presentations
             self.cvr_[group] = bookings / clicks.replace(0, np.nan)
@@ -57,11 +63,11 @@ class PropertyStatsTransformer(BaseEstimator, TransformerMixin):
             edges[0], edges[-1] = -np.inf, np.inf
             self.bin_edges_[col] = edges
 
-            bucket = pd.cut(df[col], bins=edges, labels=False)
-            clicked_bucket = pd.cut(clicked[col], bins=edges, labels=False)
-            presentations = df.groupby(bucket).size()
-            clicks        = (df['relevance'] > 0).groupby(bucket).sum()
-            bookings      = (clicked['relevance'] == 5).groupby(clicked_bucket).sum()
+            bucket         = pd.cut(unbiased[col], bins=edges, labels=False)
+            clicked_bucket = pd.cut(clicked[col],  bins=edges, labels=False)
+            presentations  = unbiased.groupby(bucket).size()
+            clicks         = (unbiased['relevance'] > 0).groupby(bucket).sum()
+            bookings       = (clicked['relevance'] == 5).groupby(clicked_bucket).sum()
             self.ctr_[col] = clicks / presentations
             self.cvr_[col] = bookings / clicks.replace(0, np.nan)
         return self
@@ -107,7 +113,7 @@ def convert_target_to_relevance_scores(df: pd.DataFrame) -> pd.DataFrame:
         [5, 1],
         default=0,
     )
-    df.drop(columns=['click_bool', 'booking_bool', 'gross_bookings_usd', 'position'],
+    df.drop(columns=['click_bool', 'booking_bool', 'gross_bookings_usd'],
             inplace=True)
     return df
 
