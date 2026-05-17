@@ -11,17 +11,20 @@ parameters = {
         'objective'         : 'lambdarank',
         'metric'            : 'ndcg',
         'eval_at'           : [5],
-        'label_gain'        : [0, 1, 0, 0, 0, 5],
-        'num_leaves'        : 23,
-        'learning_rate'     : 0.0477149,
-        'n_estimators'      : 900,
-        'max_depth'         : 0,
-        'min_data_in_leaf'  : 60,
-        'feature_fraction'  : 0.7645,
-        'bagging_fraction'  : 0.82164,
-        'bagging_freq'      : 0,
-        'lambda_l2'         : 0.00012255,
-        'min_gain_to_split' : 0.121372,
+        'label_gain'        : [0, 1, 0, 0, 0, 5], 
+        'num_leaves'        : 212,
+        'learning_rate'     : 0.03474073710753371,
+        'max_depth'         : 13,
+        'min_data_in_leaf'  : 7,
+        'feature_fraction'  : 0.6887609293602818,
+        'bagging_fraction'  : 0.9419809880561872,
+        'bagging_freq'      :  1,
+        'lambda_l1'         : 2.6412275461924535e-05,
+        'lambda_l2'         : 9.944461721519527,
+        'min_gain_to_split' : 0.8895511368523484,
+        'path_smooth'       : 0.5236868356060049,
+        'tree_learner'      : 'voting',
+        'lambdarank_position_bias_regularization' : 5,
         'verbose'           : -1
     },
     'xgboost': {
@@ -50,7 +53,7 @@ parameters = {
 }
 
 start_time = time.monotonic()
-pipeline = Pipeline(parameters = parameters, sample_size = 0.5, view_importance = True)
+pipeline = Pipeline(parameters = parameters, sample_size = 0.2, view_importance = True)
 
 # Setup approaches and metrics (to be shown in logs)
 approaches = ['xgboost', 'lambdamart', 'ensemble']

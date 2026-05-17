@@ -27,19 +27,23 @@ class LambdaMARTRanker(RankDataProcessor):
             self.feature_names = self._get_feature_columns(train_df)
 
         train_df, X_train, y_train, group_train = self._prepare_rank_data(train_df, self.feature_names)
+        train_position = train_df['position'].values if 'position' in train_df.columns else None
 
         train_data = lgb.Dataset(
             X_train, label=y_train, group=group_train,
-            feature_name=self.feature_names
+            feature_name=self.feature_names,
+            position=train_position
         )
 
         valid_data = None
         if val_df is not None:
             val_df, X_val, y_val, group_val = self._prepare_rank_data(val_df, self.feature_names)
+            val_position = val_df['position'].values if 'position' in val_df.columns else None
 
             valid_data = lgb.Dataset(
                 X_val, label=y_val, group=group_val,
-                reference=train_data, feature_name=self.feature_names
+                reference=train_data, feature_name=self.feature_names,
+                position=val_position
             )
 
         params = self.params

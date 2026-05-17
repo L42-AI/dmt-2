@@ -21,9 +21,21 @@ from predict import (
 # the others will fall back to these defaults if needed.
 FIXED_PARAMETERS = {
     'lambdamart': {
-        'num_leaves'        : 31,
-        'learning_rate'     : 0.1,
-        'n_estimators'      : 100
+        'objective'         : 'rank_xendcg',
+        'metric'            : 'ndcg',
+        'eval_at'           : [5],
+        'label_gain'        : [0, 1, 5],
+        'num_leaves'        : 23,
+        'learning_rate'     : 0.0477149,
+        'n_estimators'      : 1000,
+        'max_depth'         : -1,
+        'min_data_in_leaf'  : 60,
+        'feature_fraction'  : 0.7645,
+        'bagging_fraction'  : 0.82164,
+        'bagging_freq'      : 1,
+        'lambda_l2'         : 0.00012255,
+        'min_gain_to_split' : 0.121372,
+        'verbose'           : -1
     },
     'xgboost': {
         'max_depth'         : 7,
@@ -79,17 +91,21 @@ def tune_xgboost(trial, sample_size):
 def tune_lambdamart(trial, sample_size):
     """Tunes LightGBM Base Model"""
     lgbm_params = {
-        'num_leaves': trial.suggest_int('num_leaves', 15, 63),
-        'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.1, log=True),
-        'n_estimators': trial.suggest_int('n_estimators', 200, 1000, step=100),
-        'max_depth': trial.suggest_int('max_depth', -1, 15),
-        'min_data_in_leaf': trial.suggest_int('min_data_in_leaf', 5, 100),
-        'feature_fraction': trial.suggest_float('feature_fraction', 0.5, 1.0),
-        'bagging_fraction': trial.suggest_float('bagging_fraction', 0.5, 1.0),
-        'bagging_freq': trial.suggest_int('bagging_freq', 0, 10),
-        # lambda_l2 must be > 0 when using log=True
-        'lambda_l2': trial.suggest_float('lambda_l2', 1e-8, 10.0, log=True),
-        'min_gain_to_split': trial.suggest_float('min_gain_to_split', 0.0, 1.0)
+        'objective'         : 'rank_xendcg',
+        'metric'            : 'ndcg',
+        'n_estimators'      : 1000,
+        'bagging_freq'      : 1,
+        'verbose'           : -1,
+        'num_leaves'        : trial.suggest_int('num_leaves', 15, 255),
+        'learning_rate'     : trial.suggest_float('learning_rate', 0.01, 0.1, log=True),
+        'max_depth'         : trial.suggest_int('max_depth', 0, 15),
+        'min_data_in_leaf'  : trial.suggest_int('min_data_in_leaf', 5, 100),
+        'feature_fraction'  : trial.suggest_float('feature_fraction', 0.5, 1.0),
+        'bagging_fraction'  : trial.suggest_float('bagging_fraction', 0.5, 1.0),
+        'lambda_l1'         : trial.suggest_float('lambda_l1', 1e-8, 10.0, log=True),
+        'lambda_l2'         : trial.suggest_float('lambda_l2', 1e-8, 10.0, log=True),
+        'path_smooth'       : trial.suggest_float('path_smooth', 0.0, 1.0),
+        'min_gain_to_split' : trial.suggest_float('min_gain_to_split', 0.0, 1.0),
     }
     
     params = FIXED_PARAMETERS.copy()
